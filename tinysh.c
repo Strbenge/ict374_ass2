@@ -3,6 +3,7 @@
 #include<stdlib.h>
 #include<stdio.h>
 #include<string.h>
+#include<signal.h>
 
 int changeDir(char **args);
 
@@ -17,6 +18,11 @@ char *readFromCMD(void);
 char **ts_cmdsplit(char *line);
 
 int executeCommand(char **args);
+
+void catcher(int signo);
+
+void setSignals();
+
 
     //delimiters for parsing, whitespace only for now
 #define TS_TOK_DELIM " \t\r\n\a"
@@ -218,8 +224,39 @@ int executeCommand(char **args)
 	return launchProgram(args);
 }
 
+void catcher(int signo)
+{
+	printf("Signal no %d is caught.\n", signo);
+
+
+}
+
+
+void setSignals()
+{
+    sigset_t s;
+    sigemptyset(&s);
+    sigaddset(&s, SIGINT);
+    sigaddset(&s, SIGQUIT);
+    sigaddset(&s, SIGTSTP);
+
+    sigprocmask(SIG_SETMASK, &s, NULL);
+
+    /*
+	struct sigaction intStruct;
+	intStruct.sa_flags = 0;
+	sigfillset(&(intStruct.sa_mask));
+
+	intStruct.sa_handler = catcher; //set the catcher function
+
+	sigaction(SIGINT, &intStruct, NULL);
+	sigaction(SIGQUIT, &intStruct, NULL);
+	sigaction(SIGTSTP, &intStruct, NULL);*/
+
+}
 int main(int argc, char **argv)
 {
+    setSignals();
 	shellLoop();
 
 	return EXIT_SUCCESS;
