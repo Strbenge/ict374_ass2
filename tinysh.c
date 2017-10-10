@@ -4,36 +4,41 @@
 #include<stdio.h>
 #include<string.h>
 
-int ts_cd(char **args);
+int changeDir(char **args);
 
-int ts_help(char **args);
+int displayHelp(char **args);
 
-int ts_exit(char **args);
+int shellExit(char **args);
 
-int num_natives();
+int numOfBuiltIns();
 
-char *ts_cmdread(void);
+char *readFromCMD(void);
 
 char **ts_cmdsplit(char *line);
 
-int ts_execute(char **args);
+int executeCommand(char **args);
 
-#define TS_TOK_DELIM " \t\r\n\a" //delimiters for parsing, whitespace only for now
-#define TS_TOK_BUFSIZE 256 //buffer size
+    //delimiters for parsing, whitespace only for now
+#define TS_TOK_DELIM " \t\r\n\a"
+    //buffer size
+#define TS_TOK_BUFSIZE 256
 
-void ts_loop(void)
+
+
+void shellLoop(void)
 {
 	char *line;
 	char **args;
 	int status;
-	//print '$@@>' command line indicator
-	//read in command lines, split off arguments and execute command
+        //print '$@@>' command line indicator
+        //read in command lines, split off arguments and execute command
 
-	do{
+	do
+    {
 		printf("$@@> ");
-		line = ts_cmdread();
+		line = readFromCMD();
 		args = ts_cmdsplit(line);
-		status = ts_execute(args);
+		status = executeCommand(args);
 
 		free(line);
 		free(args);
@@ -41,151 +46,181 @@ void ts_loop(void)
 	} while(status);
 }
 
-char *ts_cmdread(void)
+char *readFromCMD(void)
 {
-	//use getline to read in comand line
+        //use getline to read in comand line
 
 	char *line = NULL;
-	ssize_t bufsize = 0;//buffer allocated by getline
+        //buffer allocated by getline
+	ssize_t bufsize = 0;
+
 	getline(&line, &bufsize, stdin);
+
 	return line;
 }
 
 char **ts_cmdsplit(char *line)
 {
-	//break command line into tokens, using whitespace as delimiter
+        //break command line into tokens, using whitespace as delimiter
 	int bufsize = TS_TOK_BUFSIZE, position = 0;
 	char **tokens = malloc(bufsize * sizeof(char*));
 	char *token;
-	//if memory allocation fails, exit
-	if(!tokens){
+        //if memory allocation fails, exit
+	if(!tokens)
+    {
 		fprintf(stderr, "lsh: allocation error\n");
-		exit(EXIT_FAILURE);
+		shellExit(EXIT_FAILURE);
 	}
-	//break input into tokens
+        //break input into tokens
 	token = strtok(line, TS_TOK_DELIM);
-	while(token != NULL){
+	while(token != NULL)
+	{
 		tokens[position] = token;
 		position++;
 
-		//increase buffer size
-		if(position >= bufsize){
+            //increase buffer size
+		if(position >= bufsize)
+        {
 			bufsize += TS_TOK_BUFSIZE;
 			tokens = realloc(tokens, bufsize * sizeof(char*));
-			//error message if no tokenstring
-			if(!tokens){
+                //error message if no tokenstring
+			if(!tokens)
+			{
 				fprintf(stderr, "lsh: allocation error\n");
-				exit(EXIT_FAILURE);
-				}
+				shellExit(EXIT_FAILURE);
+            }
 		}
-		//set token to NULL
+            //set token to NULL
 		token = strtok(NULL, TS_TOK_DELIM);
 	}
-	//end cstring with nullptr
+
+        //end cstring with nullptr
 	tokens[position] = NULL;
 	return tokens;
 }
 
-//launch processes
+    //launch processes
 
-int ts_launcher(char **args)
+int launchProgram(char **args)
 {
 	pid_t pid, wpid;
 	int status;
-	//init new process
+        //init new process
 	pid = fork();
-	if(pid == 0){
-		//child process executes
-		if(execvp(args[0], args) == -1){
+	if(pid == 0)
+    {
+            //child process executes
+		if(execvp(args[0], args) == -1)
+		{
 			perror("lsh");
 		}
-		exit(EXIT_FAILURE);
-	}else if(pid < 0){
-		//forking error
-		perror("lsh");
-	}else {
-		do{//parent process
-			wpid = waitpid(pid, &status, WUNTRACED);
-		}while (!WIFEXITED(status) && !WIFSIGNALED(status));
+		shellExit(EXIT_FAILURE);
+	}
+	else
+        if(pid < 0)
+        {
+                //forking error
+            perror("lsh");
+
+        }
+        else
+
+        {
+            do
+            {
+                //parent process
+                wpid = waitpid(pid, &status, WUNTRACED);
+
+            }while (!WIFEXITED(status) && !WIFSIGNALED(status));
+
 	}
 	return 1;
 }
 
-char *cmd_str[] = {
-	//command names
+char *builtIns[] = {
+            //command names
 	"cd",
 	"help",
 	"exit"
 };
 
-int(*native_cmd[])(char**)={
-	//pointers to native command functions
-	&ts_cd,
-	&ts_help,
-	&ts_exit
+int(*builtInsArr[])(char**)={
+        //pointers to native command functions
+	&changeDir,
+	&displayHelp,
+	&exit
 };
 
-int num_natives()
+int numOfBuiltIns()
 {
-	return sizeof(cmd_str)/sizeof(char*);
+	return sizeof(builtIns)/sizeof(char*);
 }
 
-int ts_cd(char **args)
+int changeDir(char **args)
 {
-	//execute 'cd' built in command
-	//does not go back to home directory on 'cd' command, can only use 'cd ..'
-	if(args[1] == NULL){
+        //execute 'cd' built in command
+        //does not go back to home directory on 'cd' command, can only use 'cd ..'
+	if(args[1] == NULL)
+    {
 		fprintf(stderr, "tsh: expected arg to \"cd\"\n");
-	}else{
-		if(chdir(args[1]) != 0){
+	}
+	else
+    {
+		if(chdir(args[1]) != 0)
+		{
 				perror("tsh");
-				
+
 		}
 	}
 	return 1;
 }
 
-int ts_help(char **args)
+int displayHelp(char **args)
 {
-	//prints out built in commands
+        //prints out built in commands
 
 	int i;
 	printf("TinyShell program - ICT374 Assignment 2\n");
 	printf("Type args, and hit enter\n");
 	printf("Following commands are included in the shell: \n");
 
-	for(i = 0; i < num_natives(); i++){
-		printf(" %s\n", cmd_str[i]);
+	for(i = 0; i < numOfBuiltIns(); i++)
+    {
+		printf(" %s\n", builtIns[i]);
 	}
 
 	return 1;
 }
 
-int ts_exit(char **args){
+int shellExit(char **args)
+{
 	return 0;
 }
 
-int ts_execute(char **args)
+int executeCommand(char **args)
 {
 	int i;
 
-	if(args[0] == NULL){
+	if(args[0] == NULL)
+    {
 		return 1;
 	}
-	//if command is a built in command, execute this
-	for(i = 0; i < num_natives(); i++){
-		if(strcmp(args[0], cmd_str[i]) == 0){
-				return(*native_cmd[i])(args);
-				
+        //if command is a built in command, execute this
+	for(i = 0; i < numOfBuiltIns(); i++)
+	{
+		if(strcmp(args[0], builtIns[i]) == 0)
+		{
+				return(*builtInsArr[i])(args);
+
 		}
 	}
-	//else, launch the program
-	return ts_launcher(args);
+        //else, launch the program
+	return launchProgram(args);
 }
 
 int main(int argc, char **argv)
 {
-	ts_loop();
+	shellLoop();
 
 	return EXIT_SUCCESS;
 }
