@@ -12,16 +12,14 @@ int ts_exit(char **args);
 
 int num_natives();
 
-char *ts_cmdread(void);
-
-char **ts_cmdsplit(char *line);
+char **tsCmdSplit(char *inputLine, char *token[]);
 
 int ts_execute(char **args);
 
-#define TS_TOK_DELIM " \t\r\n\a" //delimiters for parsing, whitespace only for now
-#define TS_TOK_BUFSIZE 256 //buffer size
+#define TOK_DELIM " \t\r\n\a" //delimiters for parsing, whitespace only for now
+#define MAX_TOKENS 100
 
-void ts_loop(void)
+/*void ts_loop(void)
 {
 	char *line;
 	char **args;
@@ -39,9 +37,38 @@ void ts_loop(void)
 		free(args);
 
 	} while(status);
+}*/
+
+void ts_loop()
+{
+	int exitFlag, index = 0; 
+	size_t nBytes = MAX_TOKENS;
+	char *buffer;
+	char *tokens[nbytes];
+	
+	buffer = (char *)malloc(nBytes * sizeof(char));
+
+	do{
+		printf("ict374@@=>");//prompt line
+
+		exitFlag = getline(&buffer, &nBytes, stdin);
+		
+		buffer[exitflag - 1] = '\0';
+		
+		if(strcmp(buffer,"exit") == 0)
+			break;
+		else if(exitFlag == -1)
+			printf("Error reading in");
+		
+		tsCmdSplit(buffer, tokens);
+		
+		exitFlag = ts_execute(tokens);
+		
+		exitFlag = 0;
+	}while(exitFlag >= 0);
 }
 
-char *ts_cmdread(void)
+/*char *ts_cmdread(void)
 {
 	//use getline to read in comand line
 
@@ -49,9 +76,35 @@ char *ts_cmdread(void)
 	ssize_t bufsize = 0;//buffer allocated by getline
 	getline(&line, &bufsize, stdin);
 	return line;
+}*/
+
+int tsCmdSplit(char *inputLine, char *tokens[])
+{
+	char *tokPtr;
+	int element = 0;
+
+	tokPtr = strtok(inputLine, TOK_DELIM);
+
+	while(tokPtr != NULL)
+	{	
+		//break loop if array too small
+		if(element > MAX_TOKENS){
+			element = -1;
+			break;
+		}
+
+		tokens[element] = tokPtr;
+		element++;
+		//to next token
+		tokPtr = strtok(NULL, TOK_DELIM);
+	}
+	//null term token array
+	tokens[element] = '\0';
+
+	return element;
 }
 
-char **ts_cmdsplit(char *line)
+/*char **ts_cmdsplit(char *line)
 {
 	//break command line into tokens, using whitespace as delimiter
 	int bufsize = TS_TOK_BUFSIZE, position = 0;
@@ -84,7 +137,7 @@ char **ts_cmdsplit(char *line)
 	//end cstring with nullptr
 	tokens[position] = NULL;
 	return tokens;
-}
+}*/
 
 //launch processes
 
