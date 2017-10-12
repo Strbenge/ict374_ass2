@@ -12,7 +12,7 @@ int ts_exit(char **args);
 
 int num_natives();
 
-char **tsCmdSplit(char *inputLine, char *token[]);
+int tsCmdSplit(char *inputLine, char *tokens[]);
 
 int ts_execute(char **args);
 
@@ -44,7 +44,7 @@ void ts_loop()
 	int exitFlag, index = 0; 
 	size_t nBytes = MAX_TOKENS;
 	char *buffer;
-	char *tokens[nbytes];
+	char *tokens[nBytes];
 	
 	buffer = (char *)malloc(nBytes * sizeof(char));
 
@@ -53,7 +53,7 @@ void ts_loop()
 
 		exitFlag = getline(&buffer, &nBytes, stdin);
 		
-		buffer[exitflag - 1] = '\0';
+		buffer[exitFlag - 1] = '\0';
 		
 		if(strcmp(buffer,"exit") == 0)
 			break;
