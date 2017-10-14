@@ -11,6 +11,10 @@ int displayHelp(char **args);
 
 int shellExit(char **args);
 
+int changePrompt(char **args);
+
+int displayCurDir(char **args);
+
 int numOfBuiltIns();
 
 char *readFromCMD(void);
@@ -23,7 +27,7 @@ void catcher(int signo);
 
 void setSignals();
 
-
+char *prompt = "$@@";
     //delimiters for parsing, whitespace only for now
 #define TS_TOK_DELIM " \t\r\n\a"
     //buffer size
@@ -41,7 +45,7 @@ void shellLoop(void)
 
 	do
     {
-		printf("$@@> ");
+		printf("%s", prompt);
 		line = readFromCMD();
 		args = ts_cmdsplit(line);
 		status = executeCommand(args);
@@ -147,14 +151,18 @@ char *builtIns[] = {
             //command names
 	"cd",
 	"help",
-	"exit"
+	"exit",
+	"prompt",
+	"pwd"
 };
 
 int(*builtInsArr[])(char**)={
         //pointers to native command functions
 	&changeDir,
 	&displayHelp,
-	&exit
+	&exit,
+	&changePrompt,
+	&displayCurDir
 };
 
 int numOfBuiltIns()
@@ -203,6 +211,34 @@ int shellExit(char **args)
 	return 0;
 }
 
+int changePrompt(char **args)
+{
+    if(!(args[1] == NULL))
+    {
+        prompt = args[1];
+
+    }
+
+    return 1;
+}
+
+int displayCurDir(char **args)
+{
+   char pwd[TS_TOK_BUFSIZE];
+   if (getcwd(pwd, sizeof(pwd)) != NULL)
+   {
+       printf("Current working dir: %s\n", pwd);
+   }
+
+   else
+   {
+       perror("getcwd() error");
+   }
+
+
+    return 1;
+
+}
 int executeCommand(char **args)
 {
 	int i;
@@ -242,16 +278,6 @@ void setSignals()
 
     sigprocmask(SIG_SETMASK, &s, NULL);
 
-    /*
-	struct sigaction intStruct;
-	intStruct.sa_flags = 0;
-	sigfillset(&(intStruct.sa_mask));
-
-	intStruct.sa_handler = catcher; //set the catcher function
-
-	sigaction(SIGINT, &intStruct, NULL);
-	sigaction(SIGQUIT, &intStruct, NULL);
-	sigaction(SIGTSTP, &intStruct, NULL);*/
 
 }
 int main(int argc, char **argv)
