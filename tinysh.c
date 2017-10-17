@@ -4,12 +4,11 @@
 #include<stdio.h>
 #include<string.h>
 #include<signal.h>
+#include "command.h"
 
 int changeDir(char **args);
 
 int displayHelp(char **args);
-
-int shellExit(char **args);
 
 int changePrompt(char **args);
 
@@ -17,100 +16,79 @@ int displayCurDir(char **args);
 
 int numOfBuiltIns();
 
-char *readFromCMD(void);
-
-char **ts_cmdsplit(char *line);
-
-int executeCommand(char **args);
+int executeCommand(int numCommands, Command commands[]);
 
 void catcher(int signo);
 
 void setSignals();
 
 char *prompt = "$@@";
-    //delimiters for parsing, whitespace only for now
+    //delimiters for parsing,
 #define TS_TOK_DELIM " \t\r\n\a"
     //buffer size
 #define TS_TOK_BUFSIZE 256
 
-
+#define MAX_NUM_COMMANDS 1000
 
 void shellLoop(void)
 {
-	char *line;
-	char **args;
-	int status;
-        //print '$@@>' command line indicator
-        //read in command lines, split off arguments and execute command
+	
+	int exitFlag;
+	int numcommands = 0;	
+	size_t nBytes = MAX_TOKENS;
+	char *buffer;
+	char *tokens[nBytes];
+	Command commands[MAX_NUM_COMMANDS];
+	
+	
+	buffer = (char *)malloc(nBytes * sizeof(char));
 
-	do
-    {
-		printf("%s", prompt);
-		line = readFromCMD();
-		args = ts_cmdsplit(line);
-		status = executeCommand(args);
+	do{
+		printf("%s", prompt);//prompt line
 
-		free(line);
-		free(args);
-
-	} while(status);
+		exitFlag = getline(&buffer, &nBytes, stdin);
+		
+		buffer[exitFlag - 1] = '\0';
+		
+		if(strcmp(buffer,"exit") == 0)
+			break;
+		else if(exitFlag == -1)
+			printf("Error reading in");
+		
+		numcommands = separateCommands(tokens, commands);
+		
+		commands[numcommands] = '\0';
+		
+		exitFlag = executeCommand(numcommands, commands);//this has to change
+		
+		exitFlag = 0;
+	}while(exitFlag >= 0);
+	
 }
 
-char *readFromCMD(void)
+int executeCommand(int numCommands, Command commands[])
 {
-        //use getline to read in comand line
+	int i;
+	Command *com = commands;
 
-	char *line = NULL;
-        //buffer allocated by getline
-	ssize_t bufsize = 0;
-
-	getline(&line, &bufsize, stdin);
-
-	return line;
-}
-
-char **ts_cmdsplit(char *line)
-{
-        //break command line into tokens, using whitespace as delimiter
-	int bufsize = TS_TOK_BUFSIZE, position = 0;
-	char **tokens = malloc(bufsize * sizeof(char*));
-	char *token;
-        //if memory allocation fails, exit
-	if(!tokens)
+	if(com[0] == NULL)
     {
-		fprintf(stderr, "lsh: allocation error\n");
-		shellExit(EXIT_FAILURE);
+		return 1;
 	}
-        //break input into tokens
-	token = strtok(line, TS_TOK_DELIM);
-	while(token != NULL)
+        //if command is a built in command, execute this
+	for(i = 0; i < numCommands; i++)
 	{
-		tokens[position] = token;
-		position++;
+		if(strcmp(com->argv[0], builtIns[i]) == 0)
+		{
+				return(*builtInsArr[i])(args);
 
-            //increase buffer size
-		if(position >= bufsize)
-        {
-			bufsize += TS_TOK_BUFSIZE;
-			tokens = realloc(tokens, bufsize * sizeof(char*));
-                //error message if no tokenstring
-			if(!tokens)
-			{
-				fprintf(stderr, "lsh: allocation error\n");
-				shellExit(EXIT_FAILURE);
-            }
 		}
-            //set token to NULL
-		token = strtok(NULL, TS_TOK_DELIM);
 	}
-
-        //end cstring with nullptr
-	tokens[position] = NULL;
-	return tokens;
+        //else, launch the program
+	return launchProgram(args);
 }
 
     //launch processes
-
 int launchProgram(char **args)
 {
 	pid_t pid, wpid;
@@ -151,7 +129,6 @@ char *builtIns[] = {
             //command names
 	"cd",
 	"help",
-	"exit",
 	"prompt",
 	"pwd"
 };
@@ -160,7 +137,6 @@ int(*builtInsArr[])(char**)={
         //pointers to native command functions
 	&changeDir,
 	&displayHelp,
-	&exit,
 	&changePrompt,
 	&displayCurDir
 };
@@ -206,11 +182,6 @@ int displayHelp(char **args)
 	return 1;
 }
 
-int shellExit(char **args)
-{
-	return 0;
-}
-
 int changePrompt(char **args)
 {
     if(!(args[1] == NULL))
@@ -238,26 +209,6 @@ int displayCurDir(char **args)
 
     return 1;
 
-}
-int executeCommand(char **args)
-{
-	int i;
-
-	if(args[0] == NULL)
-    {
-		return 1;
-	}
-        //if command is a built in command, execute this
-	for(i = 0; i < numOfBuiltIns(); i++)
-	{
-		if(strcmp(args[0], builtIns[i]) == 0)
-		{
-				return(*builtInsArr[i])(args);
-
-		}
-	}
-        //else, launch the program
-	return launchProgram(args);
 }
 
 void catcher(int signo)
