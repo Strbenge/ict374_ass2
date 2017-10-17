@@ -16,7 +16,13 @@ int displayCurDir(char **args);
 
 int numOfBuiltIns();
 
+int (*builtInsArr[])(char*);
+
+char *builtIns[];
+
 int executeCommand(int numCommands, Command commands[]);
+
+int launchProgram(char* args);
 
 void catcher(int signo);
 
@@ -35,7 +41,7 @@ void shellLoop(void)
 	
 	int exitFlag;
 	int numcommands = 0;	
-	size_t nBytes = MAX_TOKENS;
+	size_t nBytes = TS_TOK_BUFSIZE;
 	char *buffer;
 	char *tokens[nBytes];
 	Command commands[MAX_NUM_COMMANDS];
@@ -57,7 +63,7 @@ void shellLoop(void)
 		
 		numcommands = separateCommands(tokens, commands);
 		
-		commands[numcommands] = '\0';
+		//commands[numcommands] = '\0';
 		
 		exitFlag = executeCommand(numcommands, commands);//this has to change
 		
@@ -71,8 +77,8 @@ int executeCommand(int numCommands, Command commands[])
 	int i;
 	Command *com = commands;
 
-	if(com[0] == NULL)
-    {
+	if(com->argv[0] == NULL)
+    	{
 		return 1;
 	}
         //if command is a built in command, execute this
@@ -80,16 +86,16 @@ int executeCommand(int numCommands, Command commands[])
 	{
 		if(strcmp(com->argv[0], builtIns[i]) == 0)
 		{
-				return(*builtInsArr[i])(args);
+				return(*builtInsArr[i])(com->argv[0]);
 
 		}
 	}
         //else, launch the program
-	return launchProgram(args);
+	return launchProgram(com->argv[0]);
 }
 
     //launch processes
-int launchProgram(char **args)
+int launchProgram(char *args)
 {
 	pid_t pid, wpid;
 	int status;
@@ -102,7 +108,7 @@ int launchProgram(char **args)
 		{
 			perror("lsh");
 		}
-		shellExit(EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 	}
 	else
         if(pid < 0)
@@ -133,7 +139,7 @@ char *builtIns[] = {
 	"pwd"
 };
 
-int(*builtInsArr[])(char**)={
+int(*builtInsArr[])(char*)={
         //pointers to native command functions
 	&changeDir,
 	&displayHelp,
