@@ -29,6 +29,8 @@ void catcher(int signo);
 void setSignals();
 
 char *prompt = "$@@";
+
+int tsCmdSplit(char *inputLine, char *tokens[]);	
     //delimiters for parsing,
 #define TS_TOK_DELIM " \t\r\n\a"
     //buffer size
@@ -45,8 +47,7 @@ void shellLoop(void)
 	char *buffer;
 	char *tokens[nBytes];
 	Command commands[MAX_NUM_COMMANDS];
-	
-	
+		
 	buffer = (char *)malloc(nBytes * sizeof(char));
 
 	do{
@@ -55,48 +56,87 @@ void shellLoop(void)
 		exitFlag = getline(&buffer, &nBytes, stdin);
 		
 		buffer[exitFlag - 1] = '\0';
-		
+		printf("You printed: %s\n", buffer);
+
 		if(strcmp(buffer,"exit") == 0)
 			break;
 		else if(exitFlag == -1)
 			printf("Error reading in");
+
+		tsCmdSplit(buffer, tokens);
 		
 		numcommands = separateCommands(tokens, commands);
+
+		printf("Numcommands: %d\n ", numcommands);
+		printf("Command was: %s\n", commands[0].argv[0]);
 		
-		//commands[numcommands] = '\0';
+		//commands[numcommands] = NULL;
 		
-		exitFlag = executeCommand(numcommands, commands);//this has to change
+		exitFlag = executeCommand(numcommands, commands);
 		
 		exitFlag = 0;
 	}while(exitFlag >= 0);
 	
 }
 
+int tsCmdSplit(char *inputLine, char *tokens[])
+{
+	char *tokPtr;
+	int element = 0;
+
+	tokPtr = strtok(inputLine, TS_TOK_DELIM);
+
+	while(tokPtr != NULL)
+	{
+		if(element > TS_TOK_BUFSIZE)
+		{
+			element = -1;
+			break;
+		}
+
+		tokens[element] = tokPtr;
+		element++;
+		//to next token
+		tokPtr = strtok(NULL, TS_TOK_DELIM);
+	}
+	//null term tok array
+	tokens[element] = '\0';
+
+	return element;
+}
+
+					
 int executeCommand(int numCommands, Command commands[])
 {
 	int i;
-	Command *com = commands;
+	printf("ExecuteCommand entered\n");
 
-	if(com->argv[0] == NULL)
+	if(commands[0].argv[0]== NULL)
     	{
 		return 1;
 	}
+	printf("Test loop passed\n");
         //if command is a built in command, execute this
 	for(i = 0; i < numCommands; i++)
 	{
-		if(strcmp(com->argv[0], builtIns[i]) == 0)
+		printf("For loop pass %d\n", i);
+
+		if(strcmp(commands[i].argv[0], builtIns[i]) == 0)
 		{
-				return(*builtInsArr[i])(com->argv[0]);
+			printf("IF test %d", i);
+			return(*builtInsArr[i])(commands[i].argv[0]);
 
 		}
 	}
         //else, launch the program
-	return launchProgram(com->argv[0]);
+	return launchProgram(commands[i].argv[0]);
 }
 
     //launch processes
 int launchProgram(char *args)
 {
+	printf("launchProgram entered\n");
+
 	pid_t pid, wpid;
 	int status;
         //init new process
