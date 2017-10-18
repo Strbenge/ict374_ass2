@@ -6,23 +6,23 @@
 #include<signal.h>
 #include "command.h"
 
-int changeDir(char **args);
+int changeDir(Command commands[]);
 
-int displayHelp(char **args);
+int displayHelp(Command commands[]);
 
-int changePrompt(char **args);
+int changePrompt(Command commands[]);
 
-int displayCurDir(char **args);
+int displayCurDir(Command commands[]);
 
 int numOfBuiltIns();
 
-int (*builtInsArr[])(char*);
+int (*builtInsArr[])(Command commands[]);
 
 char *builtIns[];
 
 int executeCommand(int numCommands, Command commands[]);
 
-int launchProgram(char* args);
+int launchProgram(Command commands[]);
 
 void catcher(int signo);
 
@@ -56,7 +56,6 @@ void shellLoop(void)
 		exitFlag = getline(&buffer, &nBytes, stdin);
 		
 		buffer[exitFlag - 1] = '\0';
-		printf("You printed: %s\n", buffer);
 
 		if(strcmp(buffer,"exit") == 0)
 			break;
@@ -67,8 +66,7 @@ void shellLoop(void)
 		
 		numcommands = separateCommands(tokens, commands);
 
-		printf("Numcommands: %d\n ", numcommands);
-		printf("Command was: %s\n", commands[0].argv[0]);
+		printf("BuiltIn 0 is: %s\n", builtIns[0]);
 		
 		//commands[numcommands] = NULL;
 		
@@ -117,23 +115,23 @@ int executeCommand(int numCommands, Command commands[])
 	}
 	printf("Test loop passed\n");
         //if command is a built in command, execute this
-	for(i = 0; i < numCommands; i++)
+	for(i = 0; i < numOfBuiltIns(); i++)
 	{
 		printf("For loop pass %d\n", i);
-
-		if(strcmp(commands[i].argv[0], builtIns[i]) == 0)
+		printf("BuiltIn 1 = %s\n", builtIns[0]);
+		if(strcmp(commands[0].argv[0], builtIns[i]) == 0)
 		{
-			printf("IF test %d", i);
-			return(*builtInsArr[i])(commands[i].argv[0]);
+			printf("IF test %d\n", i);
+			return(*builtInsArr[i])(commands);
 
 		}
 	}
         //else, launch the program
-	return launchProgram(commands[i].argv[0]);
+	return launchProgram(commands);
 }
 
     //launch processes
-int launchProgram(char *args)
+int launchProgram(Command commands[])
 {
 	printf("launchProgram entered\n");
 
@@ -142,9 +140,9 @@ int launchProgram(char *args)
         //init new process
 	pid = fork();
 	if(pid == 0)
-    {
+    	{
             //child process executes
-		if(execvp(args[0], args) == -1)
+		if(execvp(commands[0].argv[0], commands[0].argv) == -1)
 		{
 			perror("lsh");
 		}
@@ -179,7 +177,7 @@ char *builtIns[] = {
 	"pwd"
 };
 
-int(*builtInsArr[])(char*)={
+int(*builtInsArr[])(Command commands[])={
         //pointers to native command functions
 	&changeDir,
 	&displayHelp,
@@ -192,17 +190,17 @@ int numOfBuiltIns()
 	return sizeof(builtIns)/sizeof(char*);
 }
 
-int changeDir(char **args)
+int changeDir(Command commands[])
 {
         //execute 'cd' built in command
         //does not go back to home directory on 'cd' command, can only use 'cd ..'
-	if(args[1] == NULL)
-    {
+	if(commands[0].argv[1] == NULL)
+    	{
 		fprintf(stderr, "tsh: expected arg to \"cd\"\n");
 	}
 	else
-    {
-		if(chdir(args[1]) != 0)
+    	{
+		if(chdir(commands[0].argv[1]) != 0)
 		{
 				perror("tsh");
 
@@ -211,7 +209,7 @@ int changeDir(char **args)
 	return 1;
 }
 
-int displayHelp(char **args)
+int displayHelp(Command commands[])
 {
         //prints out built in commands
 
@@ -228,18 +226,18 @@ int displayHelp(char **args)
 	return 1;
 }
 
-int changePrompt(char **args)
+int changePrompt(Command commands[])
 {
-    if(!(args[1] == NULL))
+    if(!(commands[0].argv[1] == NULL))
     {
-        prompt = args[1];
+        prompt = commands[0].argv[1];
 
     }
 
     return 1;
 }
 
-int displayCurDir(char **args)
+int displayCurDir(Command commands[])
 {
    char pwd[TS_TOK_BUFSIZE];
    if (getcwd(pwd, sizeof(pwd)) != NULL)
