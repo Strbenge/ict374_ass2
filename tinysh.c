@@ -66,7 +66,6 @@ void shellLoop(void)
 		
 		numcommands = separateCommands(tokens, commands);
 
-		printf("BuiltIn 0 is: %s\n", builtIns[0]);
 		
 		//commands[numcommands] = NULL;
 		
@@ -107,23 +106,17 @@ int tsCmdSplit(char *inputLine, char *tokens[])
 int executeCommand(int numCommands, Command commands[])
 {
 	int i;
-	printf("ExecuteCommand entered\n");
 
 	if(commands[0].argv[0]== NULL)
     	{
 		return 1;
 	}
-	printf("Test loop passed\n");
         //if command is a built in command, execute this
 	for(i = 0; i < numOfBuiltIns(); i++)
 	{
-		printf("For loop pass %d\n", i);
-		printf("BuiltIn 1 = %s\n", builtIns[0]);
 		if(strcmp(commands[0].argv[0], builtIns[i]) == 0)
 		{
-			printf("IF test %d\n", i);
 			return(*builtInsArr[i])(commands);
-
 		}
 	}
         //else, launch the program
