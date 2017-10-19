@@ -4,6 +4,9 @@
 #include<stdio.h>
 #include<string.h>
 #include<signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "command.h"
 
 int changeDir(Command commands[]);
@@ -30,7 +33,7 @@ void setSignals();
 
 char *prompt = "$@@";
 
-int tsCmdSplit(char *inputLine, char *tokens[]);	
+int tsCmdSplit(char *inputLine, char *tokens[]);
     //delimiters for parsing,
 #define TS_TOK_DELIM " \t\r\n\a"
     //buffer size
@@ -40,21 +43,21 @@ int tsCmdSplit(char *inputLine, char *tokens[]);
 
 void shellLoop(void)
 {
-	
+
 	int exitFlag;
-	int numcommands = 0;	
+	int numcommands = 0;
 	size_t nBytes = TS_TOK_BUFSIZE;
 	char *buffer;
 	char *tokens[nBytes];
 	Command commands[MAX_NUM_COMMANDS];
-		
+
 	buffer = (char *)malloc(nBytes * sizeof(char));
 
 	do{
 		printf("%s", prompt);//prompt line
 
 		exitFlag = getline(&buffer, &nBytes, stdin);
-		
+
 		buffer[exitFlag - 1] = '\0';
 
 		if(strcmp(buffer,"exit") == 0)
@@ -63,18 +66,18 @@ void shellLoop(void)
 			printf("Error reading in");
 
 		tsCmdSplit(buffer, tokens);
-		
+
 		numcommands = separateCommands(tokens, commands);
 
 		printf("BuiltIn 0 is: %s\n", builtIns[0]);
-		
+
 		//commands[numcommands] = NULL;
-		
+
 		exitFlag = executeCommand(numcommands, commands);
-		
+
 		exitFlag = 0;
 	}while(exitFlag >= 0);
-	
+
 }
 
 int tsCmdSplit(char *inputLine, char *tokens[])
@@ -103,7 +106,7 @@ int tsCmdSplit(char *inputLine, char *tokens[])
 	return element;
 }
 
-					
+
 int executeCommand(int numCommands, Command commands[])
 {
 	int i;
@@ -136,12 +139,40 @@ int launchProgram(Command commands[])
 	printf("launchProgram entered\n");
 
 	pid_t pid, wpid;
+	int save_out, save_in;
 	int status;
+	if(commands[0].stdout_file != NULL)
+    {
+        printf("In if for stdout \n");
+            //get fd for output redirection file
+        int fd = open(commands[0].stdout_file, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+            //save stdout fd for resetting later
+        save_out = dup(fileno(stdout));
+            //redirect stdout to file
+        dup2(fd, fileno(stdout));
+
+        close(fd);
+    }
+
+    /*if(commands[0].stdin_file != NULL)
+    {
+        printf("In if for stdin \n");
+            //get fd for output redirection file
+        int fd = open(commands[0].stdin_file, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+            //save stdout fd for resetting later
+        save_in = dup(fileno(stdin));
+            //redirect stdout to file
+        dup2(fd, fileno(stdin));
+
+        close(fd);
+    }*/
         //init new process
 	pid = fork();
 	if(pid == 0)
-    	{
+    {
             //child process executes
+
+
 		if(execvp(commands[0].argv[0], commands[0].argv) == -1)
 		{
 			perror("lsh");
@@ -166,6 +197,14 @@ int launchProgram(Command commands[])
             }while (!WIFEXITED(status) && !WIFSIGNALED(status));
 
 	}
+        //reset stdout fd
+    dup2(save_out, fileno(stdout));
+
+    //dup2(save_in, fileno(stdin));
+        //reset commands.stdout (this should move into command.c)
+    commands[0].stdout_file = NULL;
+    //commands[0].stdin_file = NULL;
+	printf("End of launchProgram\n");
 	return 1;
 }
 
