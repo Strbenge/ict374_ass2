@@ -28,9 +28,14 @@ void catcher(int signo);
 
 void setSignals();
 
-char *prompt = "$@@";
+int tsCmdSplit(char *inputLine, char *tokens[]);
 
-int tsCmdSplit(char *inputLine, char *tokens[]);	
+int pipelineExec(Command commands[]);
+
+void writeFork(Command commands[], int pipefd[]);
+
+void readFork(Command commands[], int pipefd[]);
+
     //delimiters for parsing,
 #define TS_TOK_DELIM " \t\r\n\a"
     //buffer size
@@ -38,10 +43,14 @@ int tsCmdSplit(char *inputLine, char *tokens[]);
 
 #define MAX_NUM_COMMANDS 1000
 
+char *prompt = "$@@";
+
+static Command emptyCom;
+
 void shellLoop(void)
 {
 	
-	int exitFlag;
+	int exitFlag, index;
 	int numcommands = 0;	
 	size_t nBytes = TS_TOK_BUFSIZE;
 	char *buffer;
@@ -66,10 +75,23 @@ void shellLoop(void)
 		
 		numcommands = separateCommands(tokens, commands);
 
-		
-		//commands[numcommands] = NULL;
+		//printf("First command is: %s\n", commands[0].argv[0]);
+		//printf("Separator is %s\n", commands[0].sep);
+		//printf("Second command is %s\n", commands[1].argv[0]);
+
+		//set NULL term for array
+		commands[numcommands] = emptyCom;
 		
 		exitFlag = executeCommand(numcommands, commands);
+
+		//empty the command structs for next run
+		while(index < numcommands)
+		{
+			commands[index] = emptyCom;
+			index++;
+		}
+
+
 		
 		exitFlag = 0;
 	}while(exitFlag >= 0);
@@ -110,6 +132,11 @@ int executeCommand(int numCommands, Command commands[])
 	if(commands[0].argv[0]== NULL)
     	{
 		return 1;
+	}
+	//if pipeline is present, use pipeline module
+	if(strcmp(commands[0].sep, "|") == 0)
+	{
+		return pipelineExec(commands);
 	}
         //if command is a built in command, execute this
 	for(i = 0; i < numOfBuiltIns(); i++)
@@ -268,6 +295,69 @@ void setSignals()
 
 
 }
+
+//when pipelining, splits off 2 child processes for write/read ends
+int pipelineExec(Command commands[])
+{
+	pid_t write, read;
+	pid_t parent;
+	int status;
+	int pipefd[2];
+
+	//create pipe
+	if(pipe(pipefd) <0)
+	{
+		exit(1);
+	}
+
+	//fork children
+	write = fork();
+	read = fork();
+
+	if(write == 0)
+	{
+		writeFork(commands, pipefd);
+	}
+	if(read == 0)
+	{
+		readFork(commands, pipefd);
+	}
+	//close parent copy of pipe
+	close(pipefd[0]);
+	close(pipefd[1]);
+	
+	while((parent = wait(& status)) > 0)
+	{
+		if(parent == write)
+			printf("Write terminated\n");
+		else if(parent == read)
+			printf("Read terminated\n");
+	}
+	return 0;
+}
+
+void writeFork(Command commands[], int pipefd[])
+{
+	close(pipefd[0]);
+	dup(pipefd[1]);
+	close(pipefd[1]);
+
+	execvp(commands[0].argv[0], commands[0].argv);
+
+	exit(0);
+}
+
+void readFork(Command commands[], int pipefd[])
+{
+	close(pipefd[1]);
+	dup(pipefd[0]);
+	close(pipefd[0]);
+
+	execvp(commands[1].argv[0], commands[0].argv);
+
+	exit(0);
+}
+
 int main(int argc, char **argv)
 {
     setSignals();
