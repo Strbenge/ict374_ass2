@@ -34,6 +34,8 @@ void setSignals();
 char *prompt = "$@@";
 
 int tsCmdSplit(char *inputLine, char *tokens[]);
+
+void shellExit(int code);
     //delimiters for parsing,
 #define TS_TOK_DELIM " \t\r\n\a"
     //buffer size
@@ -77,6 +79,8 @@ void shellLoop(void)
 
 		exitFlag = 0;
 	}while(exitFlag >= 0);
+
+	shellExit(exitFlag);
 
 }
 
@@ -199,8 +203,9 @@ int launchProgram(Command commands[])
 	}
         //reset stdout fd
     dup2(save_out, fileno(stdout));
-
+        //reset stdin fd
     //dup2(save_in, fileno(stdin));
+
         //reset commands.stdout (this should move into command.c)
     commands[0].stdout_file = NULL;
     //commands[0].stdin_file = NULL;
@@ -234,11 +239,11 @@ int changeDir(Command commands[])
         //execute 'cd' built in command
         //does not go back to home directory on 'cd' command, can only use 'cd ..'
 	if(commands[0].argv[1] == NULL)
-    	{
+    {
 		fprintf(stderr, "tsh: expected arg to \"cd\"\n");
 	}
 	else
-    	{
+    {
 		if(chdir(commands[0].argv[1]) != 0)
 		{
 				perror("tsh");
@@ -313,6 +318,11 @@ void setSignals()
     sigprocmask(SIG_SETMASK, &s, NULL);
 
 
+}
+
+void shellExit(int code)
+{
+    exit(code);
 }
 int main(int argc, char **argv)
 {
