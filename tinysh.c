@@ -26,7 +26,9 @@ char *builtIns[];
 
 int executeCommand(int numCommands, Command commands[]);
 
-int launchProgram(Command commands[]);
+
+
+int launchGlobProg(char* file, char** argv, char* stdOutFile, char* stdInFile);
 
 void catcher(int signo);
 
@@ -155,9 +157,13 @@ int executeCommand(int numCommands, Command commands[])
         for(i = 0; i < matchCount; i++)
         {
             printf("%s\n", globBuffer.gl_pathv[i]);
-            //launchProgram(globBuffer.gl_pathv[i], commands[0].stdout_file, commands[0].stdin_file);//call launchProgram
+            launchProg(globBuffer.gl_pathv[i], commands[0].argv, commands[0].stdout_file, commands[0].stdin_file);//call launchProgram
             //abstract
         }
+
+            //reset commands.stdout (this should move into command.c)
+        commands[0].stdout_file = NULL;
+        //commands[0].stdin_file = NULL;
     }
     else
     {
@@ -176,23 +182,26 @@ int executeCommand(int numCommands, Command commands[])
             //return 0
 
 
-	return launchProgram(commands);
+	return launchProg(commands[0].argv[0], commands[0].argv, commands[0].stdout_file, commands[0].stdin_file);
 }
 
 
-    //launch processes
-int launchProgram(Command commands[])
+
+
+int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile)
 {
-	printf("launchProgram entered\n");
+    printf("launchGlobProg entered. File: %s\n", file);
 
 	pid_t pid, wpid;
 	int save_out, save_in;
 	int status;
-	if(commands[0].stdout_file != NULL)
+
+
+	if(stdOutFile != NULL)
     {
         printf("In if for stdout \n");
             //get fd for output redirection file
-        int fd = open(commands[0].stdout_file, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+        int fd = open(stdOutFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
             //save stdout fd for resetting later
         save_out = dup(fileno(stdout));
             //redirect stdout to file
@@ -219,7 +228,7 @@ int launchProgram(Command commands[])
             //child process executes
 
 
-		if(execvp(commands[0].argv[0], commands[0].argv) == -1)
+		if(execvp(file, argv) == -1)
 		{
 			perror("lsh");
 		}
@@ -248,13 +257,10 @@ int launchProgram(Command commands[])
         //reset stdin fd
     //dup2(save_in, fileno(stdin));
 
-        //reset commands.stdout (this should move into command.c)
-    commands[0].stdout_file = NULL;
-    //commands[0].stdin_file = NULL;
+
 	printf("End of launchProgram\n");
 	return 1;
 }
-
 char *builtIns[] = {
             //command names
 	"cd",
