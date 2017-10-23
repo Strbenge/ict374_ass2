@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include<glob.h>
 #include "command.h"
 
 int changeDir(Command commands[]);
@@ -36,6 +37,10 @@ char *prompt = "$@@";
 int tsCmdSplit(char *inputLine, char *tokens[]);
 
 void shellExit(int code);
+
+void testGlob();
+
+
     //delimiters for parsing,
 #define TS_TOK_DELIM " \t\r\n\a"
     //buffer size
@@ -113,7 +118,13 @@ int tsCmdSplit(char *inputLine, char *tokens[])
 
 int executeCommand(int numCommands, Command commands[])
 {
-	int i;
+	int i, matchCount;
+	char *found = 0;
+	char expand = '*';
+	glob_t globBuffer;
+	char *pattern;
+	int exitFlag = 1;
+
 	printf("ExecuteCommand entered\n");
 
 	if(commands[0].argv[0]== NULL)
@@ -133,9 +144,41 @@ int executeCommand(int numCommands, Command commands[])
 
 		}
 	}
-        //else, launch the program
+
+	if(strchr(commands[0].argv[0], expand))
+    {
+        printf("* is found \n");
+        pattern = commands[0].argv[0];
+        glob(pattern, 0, NULL, &globBuffer);
+        matchCount = globBuffer.gl_pathc;
+
+        for(i = 0; i < matchCount; i++)
+        {
+            printf("%s\n", globBuffer.gl_pathv[i]);
+            //launchProgram(globBuffer.gl_pathv[i], commands[0].stdout_file, commands[0].stdin_file);//call launchProgram
+            //abstract
+        }
+    }
+    else
+    {
+        printf("* is not found\n");
+        //launchProgram(commands[0].argv[0], commands[0].stdout_file, commands[0].stdin_file);
+    }
+
+    //need to redesign launchProgram to take a single filename, and redirected input and output file names
+    // (if null, doesn't execute)
+
+    //if * found in command
+        //call glob
+        //for number of matching files
+        //call launchProgram(globRetVal[i]
+        //if launchProgram retval == 0
+            //return 0
+
+
 	return launchProgram(commands);
 }
+
 
     //launch processes
 int launchProgram(Command commands[])
@@ -167,7 +210,6 @@ int launchProgram(Command commands[])
         save_in = dup(fileno(stdin));
             //redirect stdout to file
         dup2(fd, fileno(stdin));
-
         close(fd);
     }*/
         //init new process
@@ -318,6 +360,26 @@ void setSignals()
     sigprocmask(SIG_SETMASK, &s, NULL);
 
 
+}
+
+void testGlob()
+{
+    int i;
+    glob_t glob_buffer;
+        //testing glob
+    const char * pattern = "*.c";
+
+    int match_count;
+
+
+    glob( pattern , 0 , NULL , &glob_buffer );
+    match_count = glob_buffer.gl_pathc;
+    printf("Number of mathces: %d \n", match_count);
+
+    for (i=0; i < match_count; i++)
+        printf("match[%d] = %s \n",i,glob_buffer.gl_pathv[i]);
+
+    globfree( &glob_buffer );
 }
 
 void shellExit(int code)
