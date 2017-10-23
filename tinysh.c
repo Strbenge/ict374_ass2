@@ -28,6 +28,8 @@ void catcher(int signo);
 
 void setSignals();
 
+void sigHandler();
+
 int tsCmdSplit(char *inputLine, char *tokens[]);
 
 int pipelineExec(Command commands[]);
@@ -60,6 +62,9 @@ void shellLoop(void)
 	buffer = (char *)malloc(nBytes * sizeof(char));
 
 	do{
+		//clean up zombies
+		signal(SIGCHLD, sigHandler);
+
 		printf("%s", prompt);//prompt line
 
 		exitFlag = getline(&buffer, &nBytes, stdin);
@@ -133,11 +138,13 @@ int executeCommand(int numCommands, Command commands[])
     	{
 		return 1;
 	}
+
 	//if pipeline is present, use pipeline module
 	if(strcmp(commands[0].sep, "|") == 0)
 	{
 		return pipelineExec(commands);
 	}
+
         //if command is a built in command, execute this
 	for(i = 0; i < numOfBuiltIns(); i++)
 	{
@@ -176,14 +183,22 @@ int launchProgram(Command commands[])
 
         }
         else
+	//parent process
+        {	//no wait for child
+	    if(strcmp(commands[0].sep, "&") == 0)
+	    {
+		    wpid = waitpid(pid, &status, WNOHANG);
+	    }
+	    else
+	    {
+		//wait for child
+            	do
+            	{
+                
+                	wpid = waitpid(pid, &status, WUNTRACED);
 
-        {
-            do
-            {
-                //parent process
-                wpid = waitpid(pid, &status, WUNTRACED);
-
-            }while (!WIFEXITED(status) && !WIFSIGNALED(status));
+            	}while (!WIFEXITED(status) && !WIFSIGNALED(status));
+	    }
 
 	}
 	return 1;
@@ -294,6 +309,21 @@ void setSignals()
     sigprocmask(SIG_SETMASK, &s, NULL);
 
 
+}
+
+void sigHandler()
+{
+	int more = 1;
+	pid_t pid;
+	int status;
+
+	while(more){
+		pid = waitpid(-1, NULL, WNOHANG);
+		if(pid <= 0)
+			more = 0;
+	}
+
+	return;
 }
 
 //when pipelining, splits off 2 child processes for write/read ends
