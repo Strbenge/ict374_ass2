@@ -27,7 +27,6 @@ char *builtIns[];
 int executeCommand(int numCommands, Command commands[]);
 
 
-
 int launchGlobProg(char* file, char** argv, char* stdOutFile, char* stdInFile);
 
 void catcher(int signo);
@@ -161,9 +160,7 @@ int executeCommand(int numCommands, Command commands[])
             //abstract
         }
 
-            //reset commands.stdout (this should move into command.c)
-        commands[0].stdout_file = NULL;
-        //commands[0].stdin_file = NULL;
+
     }
     else
     {
@@ -181,7 +178,9 @@ int executeCommand(int numCommands, Command commands[])
         //if launchProgram retval == 0
             //return 0
 
-
+    //reset commands.stdout (this should move into command.c)
+        commands[0].stdout_file = NULL;
+        //commands[0].stdin_file = NULL;
 	return launchProg(commands[0].argv[0], commands[0].argv, commands[0].stdout_file, commands[0].stdin_file);
 }
 
