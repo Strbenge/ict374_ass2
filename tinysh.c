@@ -83,6 +83,10 @@ void shellLoop(void)
 
 		exitFlag = executeCommand(numcommands, commands);
 
+         //reset commands.stdout (this should move into command.c)
+        commands[0].stdout_file = NULL;
+        commands[0].stdin_file = NULL;
+
 		exitFlag = 0;
 	}while(exitFlag >= 0);
 
@@ -121,7 +125,8 @@ int executeCommand(int numCommands, Command commands[])
 {
 	int i, matchCount;
 	char *found = 0;
-	char expand = '*';
+	char expandAst = '*';
+	char expandPer = '%';
 	glob_t globBuffer;
 	char *pattern;
 	int exitFlag = 1;
@@ -146,10 +151,10 @@ int executeCommand(int numCommands, Command commands[])
 		}
 	}
 
-	if(strchr(commands[0].argv[0], expand))
+	if(strchr(commands[0].argv[0], expandAst))
     {
         printf("* is found \n");
-        pattern = commands[0].argv[0];
+        pattern = '*';
         glob(pattern, 0, NULL, &globBuffer);
         matchCount = globBuffer.gl_pathc;
 
@@ -159,28 +164,35 @@ int executeCommand(int numCommands, Command commands[])
             launchProg(globBuffer.gl_pathv[i], commands[0].argv, commands[0].stdout_file, commands[0].stdin_file);//call launchProgram
             //abstract
         }
-
+        globfree(&globBuffer);
 
     }
     else
-    {
-        printf("* is not found\n");
-        //launchProgram(commands[0].argv[0], commands[0].stdout_file, commands[0].stdin_file);
-    }
+        if(strchr(commands[0].argv[0], expandPer))
+        {
+            printf("% is found \n");
+            pattern = '%';
+            glob(pattern, 0, NULL, &globBuffer);
+            matchCount = globBuffer.gl_pathc;
 
-    //need to redesign launchProgram to take a single filename, and redirected input and output file names
-    // (if null, doesn't execute)
+            for(i = 0; i < matchCount; i++)
+            {
+                printf("%s\n", globBuffer.gl_pathv[i]);
+                launchProg(globBuffer.gl_pathv[i], commands[0].argv, commands[0].stdout_file, commands[0].stdin_file);//call launchProgram
+            //abstract
+            }
+            globfree(&globBuffer);
+        }
+        else
+        {
+            printf("Wildcard is not found\n");
+            //launchProgram(commands[0].argv[0], commands[0].stdout_file, commands[0].stdin_file);
+        }
 
-    //if * found in command
-        //call glob
-        //for number of matching files
-        //call launchProgram(globRetVal[i]
-        //if launchProgram retval == 0
-            //return 0
 
-    //reset commands.stdout (this should move into command.c)
-        commands[0].stdout_file = NULL;
-        //commands[0].stdin_file = NULL;
+
+
+
 	return launchProg(commands[0].argv[0], commands[0].argv, commands[0].stdout_file, commands[0].stdin_file);
 }
 
@@ -192,40 +204,35 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile)
     printf("launchGlobProg entered. File: %s\n", file);
 
 	pid_t pid, wpid;
-	int save_out, save_in;
 	int status;
 
-
-	if(stdOutFile != NULL)
-    {
-        printf("In if for stdout \n");
-            //get fd for output redirection file
-        int fd = open(stdOutFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-            //save stdout fd for resetting later
-        save_out = dup(fileno(stdout));
-            //redirect stdout to file
-        dup2(fd, fileno(stdout));
-
-        close(fd);
-    }
-
-    /*if(commands[0].stdin_file != NULL)
-    {
-        printf("In if for stdin \n");
-            //get fd for output redirection file
-        int fd = open(commands[0].stdin_file, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-            //save stdout fd for resetting later
-        save_in = dup(fileno(stdin));
-            //redirect stdout to file
-        dup2(fd, fileno(stdin));
-        close(fd);
-    }*/
         //init new process
 	pid = fork();
 	if(pid == 0)
     {
             //child process executes
+        if(stdOutFile != NULL)
+        {
+            printf("In if for stdout \n");
+                //get fd for output redirection file
+            int fd = open(stdOutFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 
+            dup2(fd, fileno(stdout));
+
+            close(fd);
+        }
+
+        if(stdInFile != NULL)
+        {
+            printf("In if for stdin \n");
+            //get fd for output redirection file
+            int fd = open(stdInFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+            //save stdout fd for resetting later
+
+            //redirect stdout to file
+            dup2(fd, fileno(stdin));
+            close(fd);
+        }
 
 		if(execvp(file, argv) == -1)
 		{
@@ -251,10 +258,7 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile)
             }while (!WIFEXITED(status) && !WIFSIGNALED(status));
 
 	}
-        //reset stdout fd
-    dup2(save_out, fileno(stdout));
-        //reset stdin fd
-    //dup2(save_in, fileno(stdin));
+
 
 
 	printf("End of launchProgram\n");
