@@ -29,7 +29,7 @@ int executeCommand(int numCommands, Command commands[]);
 
 int launchGlobProg(char* file, char** argv, char* stdOutFile, char* stdInFile);
 
-void catcher(int signo);
+
 
 void setSignals();
 
@@ -39,7 +39,7 @@ int tsCmdSplit(char *inputLine, char *tokens[]);
 
 void shellExit(int code);
 
-void testGlob();
+
 
 
     //delimiters for parsing,
@@ -123,13 +123,10 @@ int tsCmdSplit(char *inputLine, char *tokens[])
 
 int executeCommand(int numCommands, Command commands[])
 {
-	int i, matchCount;
-	char *found = 0;
-	char expandAst = '*';
-	char expandPer = '%';
+	int i, j, matchCount;
 	glob_t globBuffer;
-	char *pattern;
-	int exitFlag = 1;
+    char** argList;
+    int numOfArgs = 0;
 
 	printf("ExecuteCommand entered\n");
 
@@ -151,46 +148,6 @@ int executeCommand(int numCommands, Command commands[])
 		}
 	}
 
-	if(strchr(commands[0].argv[0], expandAst))
-    {
-        printf("* is found \n");
-        pattern = '*';
-        glob(pattern, 0, NULL, &globBuffer);
-        matchCount = globBuffer.gl_pathc;
-
-        for(i = 0; i < matchCount; i++)
-        {
-            printf("%s\n", globBuffer.gl_pathv[i]);
-            launchProg(globBuffer.gl_pathv[i], commands[0].argv, commands[0].stdout_file, commands[0].stdin_file);//call launchProgram
-            //abstract
-        }
-        globfree(&globBuffer);
-
-    }
-    else
-        if(strchr(commands[0].argv[0], expandPer))
-        {
-            printf("% is found \n");
-            pattern = '%';
-            glob(pattern, 0, NULL, &globBuffer);
-            matchCount = globBuffer.gl_pathc;
-
-            for(i = 0; i < matchCount; i++)
-            {
-                printf("%s\n", globBuffer.gl_pathv[i]);
-                launchProg(globBuffer.gl_pathv[i], commands[0].argv, commands[0].stdout_file, commands[0].stdin_file);//call launchProgram
-            //abstract
-            }
-            globfree(&globBuffer);
-        }
-        else
-        {
-            printf("Wildcard is not found\n");
-            //launchProgram(commands[0].argv[0], commands[0].stdout_file, commands[0].stdin_file);
-        }
-
-
-
 
 
 	return launchProg(commands[0].argv[0], commands[0].argv, commands[0].stdout_file, commands[0].stdin_file);
@@ -205,6 +162,7 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile)
 
 	pid_t pid, wpid;
 	int status;
+
 
         //init new process
 	pid = fork();
@@ -233,6 +191,8 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile)
             dup2(fd, fileno(stdin));
             close(fd);
         }
+
+
 
 		if(execvp(file, argv) == -1)
 		{
@@ -350,13 +310,6 @@ int displayCurDir(Command commands[])
 
 }
 
-void catcher(int signo)
-{
-	printf("Signal no %d is caught.\n", signo);
-
-
-}
-
 
 void setSignals()
 {
@@ -371,25 +324,7 @@ void setSignals()
 
 }
 
-void testGlob()
-{
-    int i;
-    glob_t glob_buffer;
-        //testing glob
-    const char * pattern = "*.c";
 
-    int match_count;
-
-
-    glob( pattern , 0 , NULL , &glob_buffer );
-    match_count = glob_buffer.gl_pathc;
-    printf("Number of mathces: %d \n", match_count);
-
-    for (i=0; i < match_count; i++)
-        printf("match[%d] = %s \n",i,glob_buffer.gl_pathv[i]);
-
-    globfree( &glob_buffer );
-}
 
 void shellExit(int code)
 {

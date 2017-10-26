@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include<glob.h>
 #include "command.h"
 
 // return 1 if the token is a command separator
@@ -64,6 +65,8 @@ void searchRedirection(char *token[], Command *cp)
 // build command line argument vector for execvp function
 void buildCommandArgumentArray(char *token[], Command *cp)
 {
+    glob_t globBuffer;
+    int matchCount = 0;
      int n = (cp->last - cp->first + 1)    // the numner of tokens in the command
           + 1;                             // the element in argv must be a NULL
 
@@ -76,7 +79,7 @@ void buildCommandArgumentArray(char *token[], Command *cp)
      }
 
      // build the argument vector
-     int i;
+     int j, i;
      int k = 0;
      for (i=cp->first; i<= cp->last; ++i )
      {
@@ -84,8 +87,30 @@ void buildCommandArgumentArray(char *token[], Command *cp)
              ++i;    // skip off the std in/out redirection
          else
          {
-             cp->argv[k] = token[i];
-             ++k;
+                //expand any wildcards
+             glob(token[i], 0, NULL, &globBuffer);
+                //get number of matching files
+             matchCount = globBuffer.gl_pathc;
+                //if there is at least one new expanded file
+             if(matchCount > 0)
+             {
+                    //reallocate memory based on how many new files (tokens) there are
+                 n += matchCount;
+                 cp->argv = (char **) realloc(cp->argv, sizeof(char *) * n);
+                        //add each new file to the thing
+                 for(j = 0; j < matchCount; j++)
+                 {
+                    cp->argv[k] = globBuffer.gl_pathv[j];
+                    ++k;
+                 }
+             }
+             //else, if there were no matches from glob, just add the token
+             else
+             {
+                 cp->argv[k] = token[i];
+                ++k;
+             }
+
          }
      }
      cp->argv[k] = NULL;
