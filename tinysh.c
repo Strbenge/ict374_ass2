@@ -4,6 +4,10 @@
 #include<stdio.h>
 #include<string.h>
 #include<signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include<glob.h>
 #include "command.h"
 
 int changeDir(Command commands[]);
@@ -22,9 +26,10 @@ char *builtIns[];
 
 int executeCommand(int numCommands, Command commands[]);
 
-int launchProgram(Command commands[]);
 
-void catcher(int signo);
+int launchGlobProg(char* file, char** argv, char* stdOutFile, char* stdInFile);
+
+
 
 void setSignals();
 
@@ -38,6 +43,16 @@ void writeFork(Command commands[], int pipefd[]);
 
 void readFork(Command commands[], int pipefd[]);
 
+<<<<<<< HEAD
+=======
+int tsCmdSplit(char *inputLine, char *tokens[]);
+
+void shellExit(int code);
+
+
+
+
+>>>>>>> Chris-OutInRedirection
     //delimiters for parsing,
 #define TS_TOK_DELIM " \t\r\n\a"
     //buffer size
@@ -51,14 +66,20 @@ static Command emptyCom;
 
 void shellLoop(void)
 {
+<<<<<<< HEAD
 	
 	int exitFlag, index;
 	int numcommands = 0;	
+=======
+
+	int exitFlag;
+	int numcommands = 0;
+>>>>>>> Chris-OutInRedirection
 	size_t nBytes = TS_TOK_BUFSIZE;
 	char *buffer;
 	char *tokens[nBytes];
 	Command commands[MAX_NUM_COMMANDS];
-		
+
 	buffer = (char *)malloc(nBytes * sizeof(char));
 
 	do{
@@ -68,7 +89,7 @@ void shellLoop(void)
 		printf("%s", prompt);//prompt line
 
 		exitFlag = getline(&buffer, &nBytes, stdin);
-		
+
 		buffer[exitFlag - 1] = '\0';
 
 		if(strcmp(buffer,"exit") == 0)
@@ -77,9 +98,10 @@ void shellLoop(void)
 			printf("Error reading in");
 
 		tsCmdSplit(buffer, tokens);
-		
+
 		numcommands = separateCommands(tokens, commands);
 
+<<<<<<< HEAD
 		//printf("First command is: %s\n", commands[0].argv[0]);
 		//printf("Separator is %s\n", commands[0].sep);
 		//printf("Second command is %s\n", commands[1].argv[0]);
@@ -98,9 +120,23 @@ void shellLoop(void)
 
 
 		
+=======
+		printf("BuiltIn 0 is: %s\n", builtIns[0]);
+
+		//commands[numcommands] = NULL;
+
+		exitFlag = executeCommand(numcommands, commands);
+
+         //reset commands.stdout (this should move into command.c)
+        commands[0].stdout_file = NULL;
+        commands[0].stdin_file = NULL;
+
+>>>>>>> Chris-OutInRedirection
 		exitFlag = 0;
 	}while(exitFlag >= 0);
-	
+
+	shellExit(exitFlag);
+
 }
 
 int tsCmdSplit(char *inputLine, char *tokens[])
@@ -129,10 +165,19 @@ int tsCmdSplit(char *inputLine, char *tokens[])
 	return element;
 }
 
-					
+
 int executeCommand(int numCommands, Command commands[])
 {
+<<<<<<< HEAD
 	int i;
+=======
+	int i, j, matchCount;
+	glob_t globBuffer;
+    char** argList;
+    int numOfArgs = 0;
+
+	printf("ExecuteCommand entered\n");
+>>>>>>> Chris-OutInRedirection
 
 	if(commands[0].argv[0]== NULL)
     	{
@@ -153,23 +198,54 @@ int executeCommand(int numCommands, Command commands[])
 			return(*builtInsArr[i])(commands);
 		}
 	}
-        //else, launch the program
-	return launchProgram(commands);
+
+
+
+	return launchProg(commands[0].argv[0], commands[0].argv, commands[0].stdout_file, commands[0].stdin_file);
 }
 
-    //launch processes
-int launchProgram(Command commands[])
+
+
+
+int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile)
 {
-	printf("launchProgram entered\n");
+    printf("launchGlobProg entered. File: %s\n", file);
 
 	pid_t pid, wpid;
 	int status;
+
+
         //init new process
 	pid = fork();
 	if(pid == 0)
-    	{
+    {
             //child process executes
-		if(execvp(commands[0].argv[0], commands[0].argv) == -1)
+        if(stdOutFile != NULL)
+        {
+            printf("In if for stdout \n");
+                //get fd for output redirection file
+            int fd = open(stdOutFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+
+            dup2(fd, fileno(stdout));
+
+            close(fd);
+        }
+
+        if(stdInFile != NULL)
+        {
+            printf("In if for stdin \n");
+            //get fd for output redirection file
+            int fd = open(stdInFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+            //save stdout fd for resetting later
+
+            //redirect stdout to file
+            dup2(fd, fileno(stdin));
+            close(fd);
+        }
+
+
+
+		if(execvp(file, argv) == -1)
 		{
 			perror("lsh");
 		}
@@ -201,9 +277,12 @@ int launchProgram(Command commands[])
 	    }
 
 	}
+
+
+
+	printf("End of launchProgram\n");
 	return 1;
 }
-
 char *builtIns[] = {
             //command names
 	"cd",
@@ -230,11 +309,11 @@ int changeDir(Command commands[])
         //execute 'cd' built in command
         //does not go back to home directory on 'cd' command, can only use 'cd ..'
 	if(commands[0].argv[1] == NULL)
-    	{
+    {
 		fprintf(stderr, "tsh: expected arg to \"cd\"\n");
 	}
 	else
-    	{
+    {
 		if(chdir(commands[0].argv[1]) != 0)
 		{
 				perror("tsh");
@@ -290,13 +369,6 @@ int displayCurDir(Command commands[])
 
 }
 
-void catcher(int signo)
-{
-	printf("Signal no %d is caught.\n", signo);
-
-
-}
-
 
 void setSignals()
 {
@@ -311,6 +383,7 @@ void setSignals()
 
 }
 
+<<<<<<< HEAD
 void sigHandler()
 {
 	int more = 1;
@@ -388,6 +461,14 @@ void readFork(Command commands[], int pipefd[])
 	exit(0);
 }
 
+=======
+
+
+void shellExit(int code)
+{
+    exit(code);
+}
+>>>>>>> Chris-OutInRedirection
 int main(int argc, char **argv)
 {
     setSignals();
