@@ -275,7 +275,6 @@ int numOfBuiltIns()
 int changeDir(int cursor, Command commands[])
 {
         //execute 'cd' built in command
-        //does not go back to home directory on 'cd' command, can only use 'cd ..'
 	if(commands[cursor].argv[1] == NULL)
     	{
 		chdir(getenv("HOME"));
