@@ -150,9 +150,6 @@ int tsCmdSplit(char *inputLine, char *tokens[])
 int executeCommand(int numCommands, Command commands[])
 {
 	int i, cursor, returnNum;
-	glob_t globBuffer;
-    	char** argList;
-
 	
 	//iterate through all commands
 	for(cursor = 0; cursor < numCommands; cursor++)
@@ -202,34 +199,34 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char*
 	pid = fork();
 	if(pid == 0)
     	{
-            //child process executes
-        if(stdOutFile != NULL)
-        {
-                //get fd for output redirection file
-            int fd = open(stdOutFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+		    //child process executes
+		if(stdOutFile != NULL)
+		{
+			//get fd for output redirection file
+		    int fd = open(stdOutFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 
-            dup2(fd, fileno(stdout));
+		    dup2(fd, fileno(stdout));
 
-            close(fd);
-        }
+		    close(fd);
+		}
 
-        if(stdInFile != NULL)
-        {
-            //get fd for output redirection file
-            int fd = open(stdInFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-            //save stdout fd for resetting later
+		if(stdInFile != NULL)
+		{
+		    //get fd for output redirection file
+		    int fd = open(stdInFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+		    //save stdout fd for resetting later
 
-            //redirect stdout to file
-            dup2(fd, fileno(stdin));
-            close(fd);
-        }
+		    //redirect stdout to file
+		    dup2(fd, fileno(stdin));
+		    close(fd);
+		}
 
 
 
-	if(execvp(file, argv) == -1)
-	{
-		perror("lsh");
-	}
+		if(execvp(file, argv) == -1)
+		{
+			perror("lsh");
+		}
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -473,7 +470,7 @@ void shellExit(int code)
 
 int main(int argc, char **argv)
 {
-    setSignals();
+	setSignals();
 	shellLoop();
 
 	return EXIT_SUCCESS;
