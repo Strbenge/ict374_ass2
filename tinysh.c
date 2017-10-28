@@ -44,13 +44,11 @@ void writeFork(Command commands[], int pipefd[]);
 void readFork(Command commands[], int pipefd[]);
 
 
+int waitExec(int numCommands, Command commands[]);
+
 int tsCmdSplit(char *inputLine, char *tokens[]);
 
 void shellExit(int code);
-
-
-
-
 
     //delimiters for parsing,
 #define TS_TOK_DELIM " \t\r\n\a"
@@ -171,6 +169,11 @@ int executeCommand(int numCommands, Command commands[])
 	{
 		return pipelineExec(commands);
 	}
+	//if terminated, execute sequential
+	if(strcmp(commands[0].sep, ";") == 0)
+	{
+		return waitExec(numCommands, commands);
+	}
 
         //if command is a built in command, execute this
 	for(i = 0; i < numOfBuiltIns(); i++)
@@ -185,8 +188,6 @@ int executeCommand(int numCommands, Command commands[])
 
 	return launchProg(commands[0].argv[0], commands[0].argv, commands[0].stdout_file, commands[0].stdin_file, commands[0].sep);
 }
-
-
 
 
 int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char* sep)
@@ -316,7 +317,7 @@ int displayHelp(Command commands[])
 	printf("Following commands are included in the shell: \n");
 
 	for(i = 0; i < numOfBuiltIns(); i++)
-    {
+    	{
 		printf(" %s\n", builtIns[i]);
 	}
 
@@ -352,7 +353,6 @@ int displayCurDir(Command commands[])
 
 }
 
-
 void setSignals()
 {
     sigset_t s;
@@ -365,7 +365,6 @@ void setSignals()
 
 
 }
-
 
 void sigHandler()
 {
@@ -445,8 +444,40 @@ void readFork(Command commands[], int pipefd[])
 	exit(0);
 }
 
+int waitExec(int numCommands, Command commands[])
+{
+	int i;
 
+	for(i = 0; i < numCommands; i++)
+	{
 
+		pid_t pid, wpid;
+		int status;
+
+		pid = fork();
+
+		if(pid == 0)
+		{
+			//exec process
+			if(execvp(commands[i].argv[0], commands[i].argv) == -1)
+			{
+				perror("lsh");
+				exit(EXIT_FAILURE);
+			}
+		}
+		else
+		{
+			do
+			{
+				//wait for child
+				wpid = waitpid(pid, &status, WUNTRACED);
+
+			}while(!WIFEXITED(status) && !WIFSIGNALED(status));
+		}
+	}
+
+	return 1;
+}
 
 void shellExit(int code)
 {
