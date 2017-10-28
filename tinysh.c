@@ -281,7 +281,7 @@ int changeDir(int cursor, Command commands[])
         //does not go back to home directory on 'cd' command, can only use 'cd ..'
 	if(commands[cursor].argv[1] == NULL)
     	{
-		fprintf(stderr, "tsh: expected arg to \"cd\"\n");
+		chdir(getenv("HOME"));
 	}
 	else
     	{
