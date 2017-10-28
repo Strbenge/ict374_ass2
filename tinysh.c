@@ -150,13 +150,13 @@ int tsCmdSplit(char *inputLine, char *tokens[])
 int executeCommand(int numCommands, Command commands[])
 {
 	int i, cursor, returnNum;
-	
+
 	//iterate through all commands
 	for(cursor = 0; cursor < numCommands; cursor++)
 	{
 		//sanity test
 		if(commands[cursor].argv[0]== NULL)
-    		{	
+    		{
 			return 1;
 		}
 		//if pipeline is present, use pipeline module
@@ -212,7 +212,7 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char*
 
 		if(stdInFile != NULL)
 		{
-		    //get fd for output redirection file
+		    //get fd for input redirection file
 		    int fd = open(stdInFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 		    //save stdout fd for resetting later
 
@@ -222,7 +222,7 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char*
 		}
 
 
-
+            //command is executed
 		if(execvp(file, argv) == -1)
 		{
 			perror("lsh");
