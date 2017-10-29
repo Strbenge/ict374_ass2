@@ -1,0 +1,236 @@
+Initial make tests:
+
+root@kali:~/ict374/ass2/ict374_ass2# make clean
+rm *.o
+root@kali:~/ict374/ass2/ict374_ass2# make tinysh
+gcc -c command.c
+gcc -c tinysh.c
+gcc command.o tinysh.o -o tinysh
+root@kali:~/ict374/ass2/ict374_ass2# 
+
+============================================================
+
+Test 1 - Shell prompt reconfigure:
+
+root@kali:~/ict374/ass2/ict374_ass2# ./tinysh
+$@@prompt $ICT374>>
+$ICT374>>
+$ICT374>>
+
+=========================================================
+
+Test 2 - PWD built in:
+
+root@kali:~/ict374/ass2/ict374_ass2# ./tinysh
+$@@pwd
+/root/ict374/ass2/ict374_ass2
+$@@
+
+=========================================================
+
+Test 3 - Directory walk:
+
+$@@ls
+command.c  command.h  command.o  makefile  tinysh  tinysh.c  tinysh.o
+$@@cd ..
+$@@ls
+ict374_ass2  testdir
+$@@cd ict374_ass2
+$@@ls
+command.c  command.h  command.o  makefile  tinysh  tinysh.c  tinysh.o
+$@@cd
+$@@ls
+Desktop    Downloads  Music	Public	   Videos
+Documents  ict374     Pictures	Templates
+$@@
+
+==========================================================
+
+Test 4 - Wildcard characters:
+
+$@@ls
+command.c  command.h  command.o  makefile  tinysh  tinysh.c  tinysh.o
+$@@ls *.c
+command.c  tinysh.c
+$@@ls tinysh.*         
+tinysh.c  tinysh.o
+$@@
+
+
+==========================================================
+
+Test 5 - Redirection:
+BUG: Redirection is inconsistent, seems to hold onto redirects.
+
+
+
+==========================================================
+Test 6 - Pipeline:
+BUG: Not working, unsure why.
+
+==========================================================
+
+Test 7 - Background execution:
+BUG: Only working alone, will not string with other processes.
+
+$@@sleep 10 &
+$@@ps
+  PID TTY          TIME CMD
+ 2028 pts/0    00:00:00 bash
+ 2351 pts/0    00:00:00 tinysh
+ 2353 pts/0    00:00:00 sleep
+ 2354 pts/0    00:00:00 ps
+$@@ps
+  PID TTY          TIME CMD
+ 2028 pts/0    00:00:00 bash
+ 2351 pts/0    00:00:00 tinysh
+ 2355 pts/0    00:00:00 ps
+
+$@@sleep 10 & ls -lt
+sleep: cannot access '10': No such file or directory
+$@@
+
+==========================================================
+
+Test 8 - Sequential execution:
+BUG: Works, but reruns first command again.
+
+$@@ls ; ls -lt
+command.c  command.h  command.o  foo  makefile	tinysh	tinysh.c  tinysh.o
+total 68
+-rwxr-xr-x 1 root root 19488 Oct 29 10:45 tinysh
+-rw-r--r-- 1 root root 11456 Oct 29 10:45 tinysh.o
+-rw-r--r-- 1 root root  4104 Oct 29 10:45 command.o
+-rw-r--r-- 1 root root  8687 Oct 29 10:36 tinysh.c
+-rw-r--r-- 1 root root     0 Oct 29 10:18 foo
+-rw-r--r-- 1 root root  4996 Oct 29 08:59 command.c
+-rw-r--r-- 1 root root  2380 Oct 29 08:59 command.h
+-rw-r--r-- 1 root root   186 Oct 29 08:59 makefile
+command.c  command.h  command.o  foo  makefile	tinysh	tinysh.c  tinysh.o
+$@@
+
+BUGFIX: cursor++ after waitexec returns, set commands[cursor + i].argv in waitExec
+
+$@@ls ; echo hello ; ls -lt
+command.c  command.h  command.o  foo  makefile	tinysh	tinysh.c  tinysh.o
+hello
+total 68
+-rwxr-xr-x 1 root root 19488 Oct 29 10:59 tinysh
+-rw-r--r-- 1 root root 11456 Oct 29 10:59 tinysh.o
+-rw-r--r-- 1 root root  4104 Oct 29 10:59 command.o
+-rw-r--r-- 1 root root  8696 Oct 29 10:59 tinysh.c
+-rw-r--r-- 1 root root     0 Oct 29 10:18 foo
+-rw-r--r-- 1 root root  4996 Oct 29 08:59 command.c
+-rw-r--r-- 1 root root  2380 Oct 29 08:59 command.h
+-rw-r--r-- 1 root root   186 Oct 29 08:59 makefile
+$@@
+
+WORKING NORMALLY NOW.
+
+
+==========================================================
+Test 9 - Inherited environment:
+
+root@kali:~/ict374/ass2/ict374_ass2# printenv
+LS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:
+XDG_MENU_PREFIX=gnome-
+LANG=en_US.UTF-8
+GDM_LANG=en_US.UTF-8
+DISPLAY=:0
+COLORTERM=truecolor
+USERNAME=root
+XDG_VTNR=2
+SSH_AUTH_SOCK=/run/user/0/keyring/ssh
+XDG_SESSION_ID=2
+USER=root
+DESKTOP_SESSION=default
+QT_QPA_PLATFORMTHEME=qgnomeplatform
+PWD=/root/ict374/ass2/ict374_ass2
+HOME=/root
+JOURNAL_STREAM=8:16021
+SSH_AGENT_PID=1008
+QT_ACCESSIBILITY=1
+XDG_SESSION_TYPE=x11
+XDG_DATA_DIRS=/usr/share/gnome:/usr/local/share/:/usr/share/
+XDG_SESSION_DESKTOP=default
+GJS_DEBUG_OUTPUT=stderr
+GTK_MODULES=gail:atk-bridge
+WINDOWPATH=2
+TERM=xterm-256color
+SHELL=/bin/bash
+VTE_VERSION=4601
+XDG_CURRENT_DESKTOP=GNOME
+GPG_AGENT_INFO=/run/user/0/gnupg/S.gpg-agent:0:1
+QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+SHLVL=1
+XDG_SEAT=seat0
+WINDOWID=31457286
+GDMSESSION=default
+GNOME_DESKTOP_SESSION_ID=this-is-deprecated
+LOGNAME=root
+DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/0/bus
+XDG_RUNTIME_DIR=/run/user/0
+XAUTHORITY=/run/user/0/gdm/Xauthority
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+GJS_DEBUG_TOPICS=JS ERROR;JS LOG
+SESSION_MANAGER=local/kali:@/tmp/.ICE-unix/878,unix/kali:/tmp/.ICE-unix/878
+OLDPWD=/root/ict374/ass2
+_=/usr/bin/printenv
+
+
+root@kali:~/ict374/ass2/ict374_ass2# ./tinysh
+$@@printenv
+LS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:
+XDG_MENU_PREFIX=gnome-
+LANG=en_US.UTF-8
+GDM_LANG=en_US.UTF-8
+DISPLAY=:0
+COLORTERM=truecolor
+USERNAME=root
+XDG_VTNR=2
+SSH_AUTH_SOCK=/run/user/0/keyring/ssh
+XDG_SESSION_ID=2
+USER=root
+DESKTOP_SESSION=default
+QT_QPA_PLATFORMTHEME=qgnomeplatform
+PWD=/root/ict374/ass2/ict374_ass2
+HOME=/root
+JOURNAL_STREAM=8:16021
+SSH_AGENT_PID=1008
+QT_ACCESSIBILITY=1
+XDG_SESSION_TYPE=x11
+XDG_DATA_DIRS=/usr/share/gnome:/usr/local/share/:/usr/share/
+XDG_SESSION_DESKTOP=default
+GJS_DEBUG_OUTPUT=stderr
+GTK_MODULES=gail:atk-bridge
+WINDOWPATH=2
+TERM=xterm-256color
+SHELL=/bin/bash
+VTE_VERSION=4601
+XDG_CURRENT_DESKTOP=GNOME
+GPG_AGENT_INFO=/run/user/0/gnupg/S.gpg-agent:0:1
+QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1
+SHLVL=1
+XDG_SEAT=seat0
+WINDOWID=31457286
+GDMSESSION=default
+GNOME_DESKTOP_SESSION_ID=this-is-deprecated
+LOGNAME=root
+DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/0/bus
+XDG_RUNTIME_DIR=/run/user/0
+XAUTHORITY=/run/user/0/gdm/Xauthority
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+GJS_DEBUG_TOPICS=JS ERROR;JS LOG
+SESSION_MANAGER=local/kali:@/tmp/.ICE-unix/878,unix/kali:/tmp/.ICE-unix/878
+OLDPWD=/root/ict374/ass2
+_=./tinysh
+$@@
+
+
+==========================================================
+Test 10 - 
+
+$@@exit
+root@kali:~/ict374/ass2/ict374_ass2# 
+
+
