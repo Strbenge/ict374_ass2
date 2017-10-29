@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include<glob.h>
+#include <errno.h>
 #include "command.h"
 
 int changeDir(int cursor, Command commands[]);
@@ -34,9 +35,9 @@ int tsCmdSplit(char *inputLine, char *tokens[]);
 
 int pipelineExec(int cursor, Command commands[]);
 
-void writeFork(int cursor, Command commands[], int pipefd[]);
+extern void writeFork(int cursor, Command commands[], int pipefd[]);
 
-void readFork(int cursor, Command commands[], int pipefd[]);
+extern void readFork(int cursor, Command commands[], int pipefd[]);
 
 int waitExec(int cursor, Command commands[]);
 
@@ -51,7 +52,7 @@ void shellExit(int code);
 //maximum number of commands
 #define MAX_NUM_COMMANDS 1000
 
-char *prompt = "$@@";
+char *prompt = "$@@> ";
 
 static Command emptyCom;
 
@@ -176,6 +177,7 @@ int executeCommand(int numCommands, Command commands[])
 		if((strcmp(commands[cursor].sep, ";") == 0) && numCommands > 1)
 		{
 			returnNum = waitExec(cursor, commands);
+			cursor++;
 		}
 		//execute single command, or redirection
 		else
@@ -192,8 +194,7 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char*
 {
 
 	pid_t pid, wpid;
-	int status;
-
+	int status, save_in, save_out;
 
         //init new process
 	pid = fork();
@@ -206,7 +207,7 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char*
 		    int fd = open(stdOutFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 
 		    dup2(fd, fileno(stdout));
-
+		    
 		    close(fd);
 		}
 
@@ -214,11 +215,12 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char*
 		{
 		    //get fd for input redirection file
 		    int fd = open(stdInFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-		    //save stdout fd for resetting later
+		    //save stout fd for resetting later
 
 		    //redirect stdout to file
 		    dup2(fd, fileno(stdin));
 		    close(fd);
+		    
 		}
 
 
@@ -408,23 +410,25 @@ int pipelineExec(int cursor, Command commands[])
 void writeFork(int cursor, Command commands[], int pipefd[])
 {
 	close(pipefd[0]);
+	close(1);
 	dup(pipefd[1]);
 	close(pipefd[1]);
 
 	execvp(commands[cursor].argv[0], commands[cursor].argv);
 
-	exit(0);
+	_exit(errno == ENOENT ? 127 : 126);
 }
 
 void readFork(int cursor, Command commands[], int pipefd[])
 {
 	close(pipefd[1]);
+	close(0);
 	dup(pipefd[0]);
 	close(pipefd[0]);
 
 	execvp(commands[cursor+1].argv[0], commands[cursor+1].argv);
 
-	exit(0);
+	_exit(errno == ENOENT ? 127 : 120);
 }
 
 int waitExec(int cursor, Command commands[])
@@ -442,11 +446,11 @@ int waitExec(int cursor, Command commands[])
 		if(pid == 0)
 		{
 			//exec process
-			if(execvp(commands[cursor+i].argv[0], commands[i].argv) == -1)
+			if(execvp(commands[cursor+i].argv[0], commands[cursor+i].argv) == -1)
 			{
 				perror("lsh");
-				exit(EXIT_FAILURE);
 			}
+			exit(EXIT_FAILURE);
 		}
 		else
 		{
@@ -458,7 +462,6 @@ int waitExec(int cursor, Command commands[])
 			}while(!WIFEXITED(status) && !WIFSIGNALED(status));
 		}
 	}
-
 	return 1;
 }
 
