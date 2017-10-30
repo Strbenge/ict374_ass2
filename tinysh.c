@@ -35,10 +35,6 @@ int tsCmdSplit(char *inputLine, char *tokens[]);
 
 int pipelineExec(int cursor, Command commands[]);
 
-extern void writeFork(int cursor, Command commands[], int pipefd[]);
-
-extern void readFork(int cursor, Command commands[], int pipefd[]);
-
 int waitExec(int cursor, Command commands[]);
 
 int tsCmdSplit(char *inputLine, char *tokens[]);
@@ -389,10 +385,6 @@ int pipelineExec(int cursor, Command commands[])
 		exit(1);
 	}
 
-	//fork children
-	//write = fork();
-	//read = fork();
-
 	if((write = fork()) == 0)
 	{
 		close(fileno(stdout));
@@ -416,17 +408,6 @@ int pipelineExec(int cursor, Command commands[])
 		{
 			//do nothing
 		}
-		/*do
-		{
-			parent = waitpid(write, &status, WUNTRACED);
-		}while(!WIFEXITED(status) && !WIFSIGNALED(status));
-		printf("Write returned");
-		do
-		{
-			parent = waitpid(read, &status, WUNTRACED);
-		}while(!WIFEXITED(status) && !WIFSIGNALED(status));
-		printf("Read returned");*/
-
 	}
 
 	return 1;
