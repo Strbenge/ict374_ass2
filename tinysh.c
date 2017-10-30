@@ -166,7 +166,7 @@ int executeCommand(int numCommands, Command commands[])
 		//if pipeline is present, use pipeline module
 		if(strcmp(commands[cursor].sep, "|") == 0)
 		{
-			returnNum = pipelineExec(cursor, commands);
+			return pipelineExec(cursor, commands);
 		}
         	//if command is a built in command, execute this
 		for(i = 0; i < numOfBuiltIns(); i++)
@@ -380,8 +380,8 @@ int pipelineExec(int cursor, Command commands[])
 {
 	pid_t write, read;
 	pid_t parent;
-	int status;
 	int pipefd[2];
+	int status;
 
 	//create pipe
 	if(pipe(pipefd) <0)
@@ -390,38 +390,52 @@ int pipelineExec(int cursor, Command commands[])
 	}
 
 	//fork children
-	write = fork();
-	read = fork();
+	//write = fork();
+	//read = fork();
 
-	if(write == 0)
+	if((write = fork()) == 0)
 	{
-		writeFork(cursor, commands, pipefd);
+		close(fileno(stdout));
+		close(pipefd[0]);
+		dup2(pipefd[1], fileno(stdout));
+		execvp(commands[cursor].argv[0], commands[cursor].argv);
 	}
-	if(read == 0)
+	if((read = fork()) == 0)
 	{
-		readFork(cursor, commands, pipefd);
+		close(fileno(stdin));
+		close(pipefd[1]);
+		dup2(pipefd[0], fileno(stdin));
+		execvp(commands[cursor+1].argv[0], commands[cursor+1].argv);
+		
 	}
-	//close parent copy of pipe
-	close(pipefd[0]);
-	close(pipefd[1]);
+	else
+	{
+		close(pipefd[0]);
+		close(pipefd[1]);
+		while((parent = wait(&status)) > 0)
+		{
+			//do nothing
+		}
+		/*do
+		{
+			parent = waitpid(write, &status, WUNTRACED);
+		}while(!WIFEXITED(status) && !WIFSIGNALED(status));
+		printf("Write returned");
+		do
+		{
+			parent = waitpid(read, &status, WUNTRACED);
+		}while(!WIFEXITED(status) && !WIFSIGNALED(status));
+		printf("Read returned");*/
 
-	while((parent = wait(& status)) > 0)
-	{
-		if(parent == write)
-			printf("Write terminated\n");
-		else if(parent == read)
-			printf("Read terminated\n");
 	}
-	return 0;
+
+	return 1;
 }
 
 void writeFork(int cursor, Command commands[], int pipefd[])
 {
 	close(pipefd[0]);
-	close(1);
-	dup(pipefd[1]);
-	close(pipefd[1]);
-
+	dup2(pipefd[1], 1);
 	execvp(commands[cursor].argv[0], commands[cursor].argv);
 
 	_exit(errno == ENOENT ? 127 : 126);
@@ -430,13 +444,10 @@ void writeFork(int cursor, Command commands[], int pipefd[])
 void readFork(int cursor, Command commands[], int pipefd[])
 {
 	close(pipefd[1]);
-	close(0);
-	dup(pipefd[0]);
-	close(pipefd[0]);
-
+	dup2(pipefd[0], 0);
 	execvp(commands[cursor+1].argv[0], commands[cursor+1].argv);
 
-	_exit(errno == ENOENT ? 127 : 120);
+	_exit(errno == ENOENT ? 127 : 126);
 }
 
 int waitExec(int cursor, Command commands[])

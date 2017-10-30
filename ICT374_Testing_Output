@@ -60,56 +60,93 @@ $@@
 ==========================================================
 
 Test 5 - Redirection:
-BUG: Redirection is inconsistent, seems to hold onto redirects.
+
+$@@> rm foo
+$@@> ls
+command.c  command.o		  makefile  tinysh.c
+command.h  ICT374_Testing_Output  tinysh    tinysh.o
+$@@> ls -l > foo
+$@@> ls
+command.c  command.o  ICT374_Testing_Output  tinysh    tinysh.o
+command.h  foo	      makefile		     tinysh.c
+$@@> cat foo
+total 80
+-rw-r--r-- 1 root root  4996 Oct 30 06:25 command.c
+-rw-r--r-- 1 root root  2380 Oct 30 06:25 command.h
+-rw-r--r-- 1 root root  4104 Oct 30 06:25 command.o
+-rw------- 1 root root     0 Oct 30 06:26 foo
+-rw-r--r-- 1 root root  8883 Oct 30 06:25 ICT374_Testing_Output
+-rw-r--r-- 1 root root   186 Oct 30 06:25 makefile
+-rwxr-xr-x 1 root root 19416 Oct 30 06:25 tinysh
+-rw-r--r-- 1 root root  8544 Oct 30 06:25 tinysh.c
+-rw-r--r-- 1 root root 10928 Oct 30 06:25 tinysh.o
+$@@> cat < foo
+total 80
+-rw-r--r-- 1 root root  4996 Oct 30 06:25 command.c
+-rw-r--r-- 1 root root  2380 Oct 30 06:25 command.h
+-rw-r--r-- 1 root root  4104 Oct 30 06:25 command.o
+-rw------- 1 root root     0 Oct 30 06:26 foo
+-rw-r--r-- 1 root root  8883 Oct 30 06:25 ICT374_Testing_Output
+-rw-r--r-- 1 root root   186 Oct 30 06:25 makefile
+-rwxr-xr-x 1 root root 19416 Oct 30 06:25 tinysh
+-rw-r--r-- 1 root root  8544 Oct 30 06:25 tinysh.c
+-rw-r--r-- 1 root root 10928 Oct 30 06:25 tinysh.o
+$@@> 
+
+
 
 
 
 ==========================================================
 Test 6 - Pipeline:
-BUG: Not working, unsure why.
+
+$@@> cat foo
+total 80
+-rw-r--r-- 1 root root  4996 Oct 30 06:25 command.c
+-rw-r--r-- 1 root root  2380 Oct 30 06:25 command.h
+-rw-r--r-- 1 root root  4104 Oct 30 08:16 command.o
+-rw------- 1 root root     0 Oct 30 08:19 foo
+-rw-r--r-- 1 root root  8883 Oct 30 06:25 ICT374_Testing_Output
+-rw-r--r-- 1 root root   186 Oct 30 06:25 makefile
+-rwxr-xr-x 1 root root 19376 Oct 30 08:16 tinysh
+-rw-r--r-- 1 root root  8552 Oct 30 08:16 tinysh.c
+-rw-r--r-- 1 root root 10928 Oct 30 08:16 tinysh.o
+$@@> cat foo | grep command
+-rw-r--r-- 1 root root  4996 Oct 30 06:25 command.c
+-rw-r--r-- 1 root root  2380 Oct 30 06:25 command.h
+-rw-r--r-- 1 root root  4104 Oct 30 08:16 command.o
+$@@> 
+
+
+
 
 ==========================================================
 
 Test 7 - Background execution:
-BUG: Only working alone, will not string with other processes.
 
-$@@sleep 10 &
-$@@ps
+$@@> sleep 10 & ls -l
+total 84
+-rw-r--r-- 1 root root  4996 Oct 30 06:25 command.c
+-rw-r--r-- 1 root root  2380 Oct 30 06:25 command.h
+-rw-r--r-- 1 root root  4104 Oct 30 06:25 command.o
+-rw------- 1 root root   477 Oct 30 06:26 foo
+-rw-r--r-- 1 root root  8883 Oct 30 06:25 ICT374_Testing_Output
+-rw-r--r-- 1 root root   186 Oct 30 06:25 makefile
+-rwxr-xr-x 1 root root 19416 Oct 30 06:25 tinysh
+-rw-r--r-- 1 root root  8544 Oct 30 06:25 tinysh.c
+-rw-r--r-- 1 root root 10928 Oct 30 06:25 tinysh.o
+$@@> ps
   PID TTY          TIME CMD
- 2028 pts/0    00:00:00 bash
- 2351 pts/0    00:00:00 tinysh
- 2353 pts/0    00:00:00 sleep
- 2354 pts/0    00:00:00 ps
-$@@ps
-  PID TTY          TIME CMD
- 2028 pts/0    00:00:00 bash
- 2351 pts/0    00:00:00 tinysh
- 2355 pts/0    00:00:00 ps
+ 2493 pts/0    00:00:00 bash
+ 3778 pts/0    00:00:00 tinysh
+ 3819 pts/0    00:00:00 sleep
+ 3823 pts/0    00:00:00 ps
+$@@> 
 
-$@@sleep 10 & ls -lt
-sleep: cannot access '10': No such file or directory
-$@@
 
 ==========================================================
 
 Test 8 - Sequential execution:
-BUG: Works, but reruns first command again.
-
-$@@ls ; ls -lt
-command.c  command.h  command.o  foo  makefile	tinysh	tinysh.c  tinysh.o
-total 68
--rwxr-xr-x 1 root root 19488 Oct 29 10:45 tinysh
--rw-r--r-- 1 root root 11456 Oct 29 10:45 tinysh.o
--rw-r--r-- 1 root root  4104 Oct 29 10:45 command.o
--rw-r--r-- 1 root root  8687 Oct 29 10:36 tinysh.c
--rw-r--r-- 1 root root     0 Oct 29 10:18 foo
--rw-r--r-- 1 root root  4996 Oct 29 08:59 command.c
--rw-r--r-- 1 root root  2380 Oct 29 08:59 command.h
--rw-r--r-- 1 root root   186 Oct 29 08:59 makefile
-command.c  command.h  command.o  foo  makefile	tinysh	tinysh.c  tinysh.o
-$@@
-
-BUGFIX: cursor++ after waitexec returns, set commands[cursor + i].argv in waitExec
 
 $@@ls ; echo hello ; ls -lt
 command.c  command.h  command.o  foo  makefile	tinysh	tinysh.c  tinysh.o
@@ -124,8 +161,6 @@ total 68
 -rw-r--r-- 1 root root  2380 Oct 29 08:59 command.h
 -rw-r--r-- 1 root root   186 Oct 29 08:59 makefile
 $@@
-
-WORKING NORMALLY NOW.
 
 
 ==========================================================
