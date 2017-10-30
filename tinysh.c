@@ -195,7 +195,8 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char*
 
 	pid_t pid, wpid;
 	int status, save_in, save_out;
-
+	save_in = dup(fileno(stdin));
+    save_out = dup(fileno(stdout));
         //init new process
 	pid = fork();
 	if(pid == 0)
@@ -206,8 +207,9 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char*
 			//get fd for output redirection file
 		    int fd = open(stdOutFile, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
 
+
 		    dup2(fd, fileno(stdout));
-		    
+
 		    close(fd);
 		}
 
@@ -218,9 +220,10 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char*
 		    //save stout fd for resetting later
 
 		    //redirect stdout to file
+
 		    dup2(fd, fileno(stdin));
 		    close(fd);
-		    
+
 		}
 
 
@@ -257,6 +260,10 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char*
 	    }
 
 	}
+	dup2(fileno(stdin), save_in);
+	dup2(fileno(stdout), save_out);
+	close(save_in);
+	close(save_out);
 	return 1;
 }
 
