@@ -67,7 +67,8 @@ void shellLoop(void)
 {
 
 
-	int exitFlag, index;
+	int exitFlag;
+	int index = 0;
 	int numcommands = 0;
 	size_t nBytes = TS_TOK_BUFSIZE;
 	char *buffer;
@@ -77,6 +78,7 @@ void shellLoop(void)
 	buffer = (char *)malloc(nBytes * sizeof(char));
 
 	do{
+        index = 0;
 		//clean up zombies
 		signal(SIGCHLD, sigHandler);
 
@@ -107,6 +109,7 @@ void shellLoop(void)
 		//empty the separators, redirects for next run
 		while(index < numcommands)
 		{
+
 			commands[index].sep = NULL;
 			commands[index].stdin_file = NULL;
 			commands[index].stdout_file = NULL;
@@ -183,6 +186,9 @@ int executeCommand(int numCommands, Command commands[])
 		else
 		{
 			returnNum = launchProg(commands[cursor].argv[0], commands[cursor].argv, commands[cursor].stdout_file, commands[cursor].stdin_file, commands[cursor].sep);
+            commands[cursor].stdout_file = NULL;
+            commands[cursor].stdin_file = NULL;
+
 		}
 	}
 
@@ -195,8 +201,6 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char*
 
 	pid_t pid, wpid;
 	int status, save_in, save_out;
-	save_in = dup(fileno(stdin));
-    save_out = dup(fileno(stdout));
         //init new process
 	pid = fork();
 	if(pid == 0)
@@ -260,10 +264,7 @@ int launchProg(char* file, char** argv, char* stdOutFile, char* stdInFile, char*
 	    }
 
 	}
-	dup2(fileno(stdin), save_in);
-	dup2(fileno(stdout), save_out);
-	close(save_in);
-	close(save_out);
+
 	return 1;
 }
 
