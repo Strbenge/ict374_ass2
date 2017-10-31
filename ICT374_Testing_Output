@@ -17,6 +17,10 @@ $@@prompt $ICT374>>
 $ICT374>>
 $ICT374>>
 
+$@@> prompt 
+$@@> 
+
+
 =========================================================
 
 Test 2 - PWD built in:
@@ -55,6 +59,12 @@ command.c  tinysh.c
 $@@ls tinysh.*         
 tinysh.c  tinysh.o
 $@@
+
+$@@> ls ?ommand.*
+command.c  command.h  command.o
+$@@> ls ???mand.*
+command.c  command.h  command.o
+$@@> 
 
 
 ==========================================================
@@ -267,5 +277,124 @@ Test 10 -
 
 $@@exit
 root@kali:~/ict374/ass2/ict374_ass2# 
+
+
+
+$@@> ^C
+$@@> ^Z
+$@@> =
+lsh: No such file or directory
+$@@> ^_
+lsh: No such file or directory
+$@@>   
+
+$@@> shmeb
+lsh: No such file or directory
+$@@> aaaaaaa
+lsh: No such file or directory
+$@@> fooollalaladjljvhuh
+lsh: No such file or directory
+$@@> auhcuhav
+lsh: No such file or directory
+$@@> 
+$@@> 
+$@@> 
+$@@> 
+$@@> 
+
+
+Print the pipe manual:
+
+$@@> man pipe | cat
+PIPE(2)                    Linux Programmer's Manual                   PIPE(2)
+
+NAME
+       pipe, pipe2 - create pipe
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int pipe(int pipefd[2]);
+
+       #define _GNU_SOURCE             /* See feature_test_macros(7) */
+       #include <fcntl.h>              /* Obtain O_* constant definitions */
+       #include <unistd.h>
+etc,etc.....
+
+
+
+See processes:
+
+$@@> ps -aux
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         1  0.0  0.3 204916  6812 ?        Ss   Oct29   0:03 /sbin/init
+root         2  0.0  0.0      0     0 ?        S    Oct29   0:00 [kthreadd]
+root         3  0.2  0.0      0     0 ?        S    Oct29   6:04 [ksoftirqd/0]
+root         5  0.0  0.0      0     0 ?        S<   Oct29   0:00 [kworker/0:0H]
+root         7  0.0  0.0      0     0 ?        S    Oct29   2:23 [rcu_sched]
+root         8  0.0  0.0      0     0 ?        S    Oct29   0:00 [rcu_bh]
+root         9  0.0  0.0      0     0 ?        S    Oct29   0:03 [migration/0]
+root        10  0.0  0.0      0     0 ?        S<   Oct29   0:00 [lru-add-drain]
+root        11  0.0  0.0      0     0 ?        S    Oct29   0:02 [watchdog/0]
+root        12  0.0  0.0      0     0 ?        S    Oct29   0:00 [cpuhp/0]
+root        13  0.0  0.0      0     0 ?        S    Oct29   0:00 [cpuhp/1]
+etc, etc......
+
+
+Run ifconfig:
+
+$@@> ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 10.0.2.15  netmask 255.255.255.0  broadcast 10.0.2.255
+        inet6 fe80::a00:27ff:fea1:b6e6  prefixlen 64  scopeid 0x20<link>
+        ether 08:00:27:a1:b6:e6  txqueuelen 1000  (Ethernet)
+        RX packets 36494  bytes 20319052 (19.3 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 20960  bytes 3765380 (3.5 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1  (Local Loopback)
+        RX packets 208  bytes 12396 (12.1 KiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 208  bytes 12396 (12.1 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+$@@>
+
+Make/Delete directories:
+
+$@@> ls    
+command.c  command.o  ICT374_Testing_Output  tinysh    tinysh.o
+command.h  foo	      makefile		     tinysh.c
+$@@> mkdir fooBar
+$@@> ls
+command.c  command.o  fooBar		     makefile  tinysh.c
+command.h  foo	      ICT374_Testing_Output  tinysh    tinysh.o
+$@@> rm -r fooBar
+$@@> ls
+command.c  command.o  ICT374_Testing_Output  tinysh    tinysh.o
+command.h  foo	      makefile		     tinysh.c
+$@@> rm foo
+$@@> ls
+command.c  command.o		  makefile  tinysh.c
+command.h  ICT374_Testing_Output  tinysh    tinysh.o
+$@@> 
+
+
+Make a new file:
+$@@> ls
+command.c  command.o		  makefile  tinysh.c
+command.h  ICT374_Testing_Output  tinysh    tinysh.o
+$@@> touch newfile    
+$@@> ls
+command.c  command.o		  makefile  tinysh    tinysh.o
+command.h  ICT374_Testing_Output  newfile   tinysh.c
+$@@> 
+
+
+
 
 
