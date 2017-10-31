@@ -406,29 +406,11 @@ int pipelineExec(int cursor, Command commands[])
 		close(pipefd[1]);
 		while((parent = wait(&status)) > 0)
 		{
-			//do nothing
+			//do nothing, just wait for both children to exit
 		}
 	}
 
 	return 1;
-}
-
-void writeFork(int cursor, Command commands[], int pipefd[])
-{
-	close(pipefd[0]);
-	dup2(pipefd[1], 1);
-	execvp(commands[cursor].argv[0], commands[cursor].argv);
-
-	_exit(errno == ENOENT ? 127 : 126);
-}
-
-void readFork(int cursor, Command commands[], int pipefd[])
-{
-	close(pipefd[1]);
-	dup2(pipefd[0], 0);
-	execvp(commands[cursor+1].argv[0], commands[cursor+1].argv);
-
-	_exit(errno == ENOENT ? 127 : 126);
 }
 
 int waitExec(int cursor, Command commands[])
