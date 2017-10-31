@@ -1,3 +1,11 @@
+/*
+Title: Tinysh.c
+A small shell program for ICT374 Assigment
+Version: 1.0 (Alpha)
+Authors: Chris Wright, Steven Benge
+Date: 30/10/2017
+*/
+
 #include <sys/wait.h>
 #include<unistd.h>
 #include<stdlib.h>
@@ -398,7 +406,7 @@ int pipelineExec(int cursor, Command commands[])
 		close(pipefd[1]);
 		dup2(pipefd[0], fileno(stdin));
 		execvp(commands[cursor+1].argv[0], commands[cursor+1].argv);
-		
+
 	}
 	else
 	{
